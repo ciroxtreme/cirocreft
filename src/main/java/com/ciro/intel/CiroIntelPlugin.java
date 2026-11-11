@@ -951,6 +951,28 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
     }
 
     private void sendTelegramMessage(String text) {
+        if (text == null || text.trim().isEmpty()) return;
+
+        // Batas maksimal pesan Telegram adalah 4096 karakter. Jika lebih dari 3800 karakter, pecah (chunking)!
+        if (text.length() <= 3800) {
+            sendSingleTelegramMessage(text);
+        } else {
+            // Pemecahan pesan cerdas (Smart Chunking berdasarkan baris baru)
+            List<String> chunks = splitTextIntoChunks(text, 3500);
+            for (int i = 0; i < chunks.size(); i++) {
+                String part = chunks.get(i);
+                if (chunks.size() > 1) {
+                    part = "<i>(Bagian " + (i + 1) + "/" + chunks.size() + ")</i>\n" + part;
+                }
+                sendSingleTelegramMessage(part);
+                try {
+                    Thread.sleep(500); // Jeda 500ms agar urutan pesan rapi di Telegram
+                } catch (InterruptedException ignored) {}
+            }
+        }
+    }
+
+    private void sendSingleTelegramMessage(String text) {
         try {
             URL url = URI.create("https://api.telegram.org/bot" + botToken + "/sendMessage").toURL();
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -971,11 +993,63 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
 
             int code = conn.getResponseCode();
             if (code != 200) {
-                getLogger().warning("[CiroIntel] Telegram response code: " + code);
+                // Baca error body dari Telegram untuk logging presisi
+                StringBuilder errSb = new StringBuilder();
+                try (BufferedReader errReader = new BufferedReader(new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8))) {
+                    String line;
+                    while ((line = errReader.readLine()) != null) errSb.append(line);
+                } catch (Exception ignored) {}
+                getLogger().warning("[CiroIntel] Telegram response code: " + code + " | Body: " + errSb.toString());
+
+                // Fallback: Jika gagal karena unclosed HTML tag (HTTP 400), kirim plain text tanpa parse_mode
+                if (code == 400 && text.contains("<")) {
+                    sendPlainTelegramMessage(text.replaceAll("<[^>]+>", ""));
+                }
             }
         } catch (Exception e) {
             getLogger().warning("[CiroIntel] Gagal kirim Telegram: " + e.getMessage());
         }
+    }
+
+    private void sendPlainTelegramMessage(String plainText) {
+        try {
+            URL url = URI.create("https://api.telegram.org/bot" + botToken + "/sendMessage").toURL();
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+            conn.setDoOutput(true);
+            conn.setConnectTimeout(8000);
+            conn.setReadTimeout(8000);
+
+            String body = "chat_id=" + URLEncoder.encode(chatId, StandardCharsets.UTF_8) +
+                    "&text=" + URLEncoder.encode(plainText, StandardCharsets.UTF_8) +
+                    "&disable_web_page_preview=true";
+
+            try (OutputStream os = conn.getOutputStream()) {
+                os.write(body.getBytes(StandardCharsets.UTF_8));
+            }
+            conn.getResponseCode();
+        } catch (Exception ignored) {}
+    }
+
+    private List<String> splitTextIntoChunks(String text, int maxChunkSize) {
+        List<String> chunks = new ArrayList<>();
+        String[] lines = text.split("\n");
+        StringBuilder current = new StringBuilder();
+
+        for (String line : lines) {
+            if (current.length() + line.length() + 1 > maxChunkSize) {
+                if (current.length() > 0) {
+                    chunks.add(current.toString().trim());
+                    current.setLength(0);
+                }
+            }
+            current.append(line).append("\n");
+        }
+        if (current.length() > 0) {
+            chunks.add(current.toString().trim());
+        }
+        return chunks;
     }
 
     private String normalizeTitle(String raw) {
