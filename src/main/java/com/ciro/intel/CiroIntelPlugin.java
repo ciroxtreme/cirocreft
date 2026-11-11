@@ -24,6 +24,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import org.w3c.dom.Document;
@@ -38,10 +40,13 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
     private int scanIntervalMinutes;
     private int summaryHourWib;
 
-    // Database memori deduplikasi berita 24 jam (Key: Normalized Title Hash, Value: NewsItem)
     private final Map<String, NewsItem> newsDatabase = new ConcurrentHashMap<>();
     private final AtomicBoolean isScanning = new AtomicBoolean(false);
     private int lastReportedDay = -1;
+
+    // Telegram polling offset
+    private long telegramOffset = 0;
+    private boolean isPollingRunning = true;
 
     public static class NewsItem {
         public final String sector; // IDX, GOLD, BTC
@@ -69,17 +74,20 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
             getCommand("cirointel").setExecutor(this);
         }
 
-        getLogger().info("[CiroIntel] Plugin Intel Pasar diaktifkan! Scanning aktif tiap " + scanIntervalMinutes + " menit.");
+        getLogger().info("[CiroIntel] Plugin Intel Pasar Aktif! Telegram Bot Polling Berjalan.");
 
-        // Kirim salam pembuka ke Telegram saat server menyala
+        // Salam pembuka via Telegram
         new BukkitRunnable() {
             @Override
             public void run() {
                 sendTelegramMessage("🛰️ <b>Ciro Market Intel Sentinel Aktif!</b>\n" +
-                        "• Hosting: Server Minecraft (Paper 1.21)\n" +
+                        "• Hosting: Server Minecraft (Paper)\n" +
                         "• Mode: 24 Jam Silent Scraper (IDX, Gold, BTC)\n" +
-                        "• Waktu Laporan: Setiap Jam 00:00 WIB\n" +
-                        "• Perintah Cepat: Ketik di console <code>cirointel scan</code> atau <code>cirointel summary</code>");
+                        "• Waktu Laporan: Setiap Jam 00:00 WIB\n\n" +
+                        "💬 <b>Perintah Chat Telegram (@Dicopi_bot):</b>\n" +
+                        "👉 <code>/summary</code> atau <code>/lapor</code> - Rangkum & kirim laporan sekarang\n" +
+                        "👉 <code>/scan</code> - Pindai berita baru sekarang\n" +
+                        "👉 <code>/status</code> - Cek total berita tersimpan");
             }
         }.runTaskAsynchronously(this);
 
@@ -99,14 +107,109 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
                 checkMidnightSummaryTrigger();
             }
         }.runTaskTimerAsynchronously(this, 200L, 1200L);
+
+        // Telegram Polling Listener (Tiap 3 detik)
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (isPollingRunning) {
+                    pollTelegramUpdates();
+                }
+            }
+        }.runTaskTimerAsynchronously(this, 60L, 60L);
     }
 
     @Override
     public void onDisable() {
+        isPollingRunning = false;
         getLogger().info("[CiroIntel] Plugin Intel dinonaktifkan.");
     }
 
-    
+    private void loadConfiguration() {
+        reloadConfig();
+        this.botToken = getConfig().getString("telegram.bot_token", "8899978543:AAHlrCjXZbiJwcI_OZIzXrGdpKC5_BCGCEs");
+        this.chatId = getConfig().getString("telegram.chat_id", "1936436999");
+        this.scanIntervalMinutes = getConfig().getInt("crawler.scan_interval_minutes", 15);
+        this.summaryHourWib = getConfig().getInt("crawler.daily_summary_hour_wib", 0);
+    }
+
+    // ================= POLLING TELEGRAM =================
+    private void pollTelegramUpdates() {
+        try {
+            String urlStr = "https://api.telegram.org/bot" + botToken + "/getUpdates?timeout=2&offset=" + telegramOffset;
+            URL url = URI.create(urlStr).toURL();
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setConnectTimeout(6000);
+            conn.setReadTimeout(6000);
+
+            if (conn.getResponseCode() != 200) return;
+
+            StringBuilder sb = new StringBuilder();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    sb.append(line);
+                }
+            }
+
+            String resp = sb.toString();
+            // Parsing regex update Telegram sederhana & cepat tanpa dependensi JSON eksternal
+            Pattern pUpdate = Pattern.compile("\\{\"update_id\":(\\d+).*?\"chat\":\\{\"id\":(\\d+).*?\"text\":\"([^\"]+)\"");
+            Matcher m = pUpdate.matcher(resp);
+
+            while (m.find()) {
+                long upId = Long.parseLong(m.group(1));
+                String fromChatId = m.group(2);
+                String rawText = m.group(3).replace("\\/", "/");
+
+                if (upId >= telegramOffset) {
+                    telegramOffset = upId + 1;
+                }
+
+                if (chatId.equals(fromChatId)) {
+                    handleTelegramChatCommand(rawText.trim());
+                }
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private void handleTelegramChatCommand(String text) {
+        String cmd = text.toLowerCase().split("\\s+")[0].split("@")[0];
+
+        if (cmd.equals("/status") || cmd.equals("/cek") || cmd.equals("status")) {
+            sendTelegramMessage("📊 <b>Status Radar CiroIntel:</b>\n" +
+                    "• Mode: 24 Jam Aktif di Server Minecraft\n" +
+                    "• Total Berita Tersimpan: <b>" + newsDatabase.size() + " item</b>\n" +
+                    "• Interval Scan: Tiap " + scanIntervalMinutes + " menit\n" +
+                    "• Jadwal Laporan: Pukul 00:00 WIB\n\n" +
+                    "💡 Ketik <code>/summary</code> untuk minta laporan sekarang!");
+        } else if (cmd.equals("/scan") || cmd.equals("scan")) {
+            sendTelegramMessage("🔍 <b>Memulai pemindaian berita multi-sumber sekarang...</b>");
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    int added = runScanCycleAsync(true);
+                    sendTelegramMessage("✅ <b>Scan Selesai!</b> Ditemukan <b>" + added + "</b> berita baru. Total pool: <b>" + newsDatabase.size() + "</b>.");
+                }
+            }.runTaskAsynchronously(this);
+        } else if (cmd.equals("/summary") || cmd.equals("/lapor") || cmd.equals("/kirim") || cmd.equals("summary")) {
+            sendTelegramMessage("⚡ <b>Menyusun rangkuman Early Alpha dari seluruh berita hari ini...</b>");
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    sendMidnightSummary(true);
+                }
+            }.runTaskAsynchronously(this);
+        } else if (cmd.equals("/start") || cmd.equals("/help")) {
+            sendTelegramMessage("👋 <b>Selamat Datang di Ciro Market Intel Bot!</b>\n\n" +
+                    "Perintah yang bisa Tuan kirim:\n" +
+                    "👉 <code>/summary</code> - Buat dan kirim rangkuman sekarang\n" +
+                    "👉 <code>/scan</code> - Pindai berita terbaru detik ini\n" +
+                    "👉 <code>/status</code> - Cek jumlah berita yang terkumpul");
+        }
+    }
+
     @EventHandler
     public void onPlayerChat(AsyncPlayerChatEvent event) {
         String msg = event.getMessage().trim().toLowerCase();
@@ -134,14 +237,6 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
                 }
             }.runTaskAsynchronously(this);
         }
-    }
-
-    private void loadConfiguration() {
-        reloadConfig();
-        this.botToken = getConfig().getString("telegram.bot_token", "8899978543:AAHlrCjXZbiJwcI_OZIzXrGdpKC5_BCGCEs");
-        this.chatId = getConfig().getString("telegram.chat_id", "1936436999");
-        this.scanIntervalMinutes = getConfig().getInt("crawler.scan_interval_minutes", 15);
-        this.summaryHourWib = getConfig().getInt("crawler.daily_summary_hour_wib", 0);
     }
 
     @Override
@@ -202,7 +297,6 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
             totalNew += fetchRssFeed("https://decrypt.co/feed", "BTC");
             totalNew += fetchRssFeed("https://cryptoslate.com/feed/", "BTC");
 
-            // Bersihkan berita usang (> 28 jam)
             long cutoff = System.currentTimeMillis() - (28L * 3600L * 1000L);
             newsDatabase.entrySet().removeIf(e -> e.getValue().timestamp < cutoff);
 
@@ -262,9 +356,7 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
                     }
                 }
             }
-        } catch (Exception ignored) {
-            // Abaikan error koneksi feed individu agar tidak spam konsol
-        }
+        } catch (Exception ignored) {}
         return added;
     }
 
@@ -274,7 +366,6 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
         int currentHour = nowWib.getHour();
         int currentMinute = nowWib.getMinute();
 
-        // Tepat jam 00:00 - 00:05 WIB dan belum lapor hari ini
         if (currentHour == summaryHourWib && currentMinute <= 5 && lastReportedDay != currentDay) {
             lastReportedDay = currentDay;
             sendMidnightSummary(false);
@@ -296,7 +387,6 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
             else if ("BTC".equalsIgnoreCase(item.sector)) btcList.add(item);
         }
 
-        // Ambil berita paling berbobot (mengandung kata kunci aksi korporasi / whale / yield)
         List<NewsItem> topIdx = filterHighImpact(idxList, Arrays.asList("akuisisi", "merger", "dividen", "investasi", "baterai", "laba", "suspensi", "esdm", "pabrik", "tender", "bumn"));
         List<NewsItem> topGold = filterHighImpact(goldList, Arrays.asList("fed", "rate", "yield", "inflation", "cpi", "war", "middle east", "central bank", "china", "pboc", "gold"));
         List<NewsItem> topBtc = filterHighImpact(btcList, Arrays.asList("whale", "etf", "sec", "inflow", "outflow", "blackrock", "binance", "coinbase", "reserve", "all-time", "trump"));
@@ -343,7 +433,6 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
         result.addAll(prioritized);
         result.addAll(regular);
 
-        // Batasi 3 berita paling relevan per sektor agar teks padat
         return result.subList(0, Math.min(result.size(), 3));
     }
 
@@ -388,9 +477,7 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
     }
 
     private String normalizeTitle(String raw) {
-        // Hilangkan nama portal di ujung judul (contoh: " - CNBC Indonesia")
         String s = raw.replaceAll("\\s*-\\s*[^-]+$", "");
-        // Ambil karakter alfanumerik saja untuk mencocokkan kemiripan judul
         return s.toLowerCase().replaceAll("[^a-z0-9]", "");
     }
 
