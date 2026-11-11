@@ -461,50 +461,61 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
             }
 
             String resp = sb.toString();
-            // Robust parsing untuk "content"
-            int idx = resp.indexOf("\"content\": \"");
-            if (idx == -1) {
-                idx = resp.indexOf("\"content\":\"");
-                if (idx != -1) idx += 10;
-            } else {
-                idx += 11;
-            }
-
-            if (idx != -1) {
-                StringBuilder extracted = new StringBuilder();
-                boolean escaped = false;
-                for (int i = idx; i < resp.length(); i++) {
-                    char c = resp.charAt(i);
-                    if (escaped) {
-                        if (c == 'n') extracted.append("\n");
-                        else if (c == '\"') extracted.append('\"');
-                        else if (c == '\\') extracted.append('\\');
-                        else if (c == 't') extracted.append('\t');
-                        else extracted.append(c);
-                        escaped = false;
-                    } else if (c == '\\') {
-                        escaped = true;
-                    } else if (c == '\"') {
-                        break;
-                    } else {
-                        extracted.append(c);
+            // Robust extraction untuk isi string "content": "..."
+            String key = "\"content\":";
+            int keyIdx = resp.indexOf(key);
+            if (keyIdx != -1) {
+                int quoteStart = resp.indexOf('\"', keyIdx + key.length());
+                if (quoteStart != -1) {
+                    StringBuilder extracted = new StringBuilder();
+                    boolean escaped = false;
+                    for (int i = quoteStart + 1; i < resp.length(); i++) {
+                        char c = resp.charAt(i);
+                        if (escaped) {
+                            if (c == 'n') extracted.append("\n");
+                            else if (c == '\"') extracted.append('\"');
+                            else if (c == '\\') extracted.append('\\');
+                            else if (c == 't') extracted.append('\t');
+                            else if (c == 'r') { /* abaikan \r */ }
+                            else if (c == 'u' && i + 4 < resp.length()) {
+                                try {
+                                    String hex = resp.substring(i + 1, i + 5);
+                                    extracted.append((char) Integer.parseInt(hex, 16));
+                                    i += 4;
+                                } catch (Exception ignored) {
+                                    extracted.append(c);
+                                }
+                            } else {
+                                extracted.append(c);
+                            }
+                            escaped = false;
+                        } else if (c == '\\') {
+                            escaped = true;
+                        } else if (c == '\"') {
+                            break;
+                        } else {
+                            extracted.append(c);
+                        }
                     }
-                }
-                String textRes = extracted.toString().trim();
-                if (!textRes.isEmpty()) {
-                    // Konversi markdown **bold** ke <b>bold</b> untuk Telegram jika ada
-                    textRes = textRes.replaceAll("\\*\\*([^\\*]+)\\*\\*", "<b>$1</b>");
-                    textRes = textRes.replaceAll("###\\s*(.+)", "<b>$1</b>");
-                    textRes = textRes.replaceAll("##\\s*(.+)", "<b>$1</b>");
-                    textRes = textRes.replaceAll("#\\s*(.+)", "<b>$1</b>");
-                    return textRes;
+                    String textRes = extracted.toString().trim();
+                    if (!textRes.isEmpty()) {
+                        // Konversi markdown header / bold ke HTML Telegram
+                        textRes = textRes.replaceAll("\\*\\*([^\\*]+)\\*\\*", "<b>$1</b>");
+                        textRes = textRes.replaceAll("###\\s*(.+)", "<b>$1</b>");
+                        textRes = textRes.replaceAll("##\\s*(.+)", "<b>$1</b>");
+                        textRes = textRes.replaceAll("#\\s*(.+)", "<b>$1</b>");
+                        return textRes;
+                    } else {
+                        getLogger().warning("[Luna AI] Content kosong dalam respons JSON! Raw response: " + resp);
+                        sendTelegramMessage("⚠️ <i>AI Luna merespons tapi isinya kosong.</i>");
+                    }
                 } else {
-                    getLogger().warning("[Luna AI] Content kosong dalam respons JSON!");
-                    sendTelegramMessage("⚠️ <i>AI Luna merespons tapi isinya kosong (reasoning limit exceeded).</i>");
+                    getLogger().warning("[Luna AI] Tidak ditemukan tanda petik setelah 'content:'! Raw: " + resp);
+                    sendTelegramMessage("⚠️ <i>Format JSON AI Luna tidak memiliki string content.</i>");
                 }
             } else {
-                getLogger().warning("[Luna AI] Gagal menemukan key 'content' di respons JSON.");
-                sendTelegramMessage("⚠️ <i>Gagal membaca respons AI Luna (format JSON berbeda).</i>");
+                getLogger().warning("[Luna AI] Gagal menemukan key 'content' di respons JSON. Raw: " + resp);
+                sendTelegramMessage("⚠️ <i>Gagal membaca respons AI Luna (key 'content' tidak ditemukan).</i>");
             }
         } catch (Exception e) {
             getLogger().warning("[Luna AI] Error calling API: " + e.getMessage());
