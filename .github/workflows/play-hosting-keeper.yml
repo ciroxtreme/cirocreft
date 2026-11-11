@@ -1,0 +1,53 @@
+name: Play.Hosting 24/7 Keeper (Azure Cloud IP)
+
+on:
+  schedule:
+    - cron: '*/20 * * * *'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: play-hosting-keeper
+  cancel-in-progress: false
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Show Azure Public IP
+        run: |
+          echo "Connecting via GitHub Azure Datacenter IP:"
+          curl -s https://api.ipify.org || true
+          echo ""
+
+      - name: Install Mineflayer
+        run: npm install mineflayer@4.39.0
+
+      - name: Run Play.Hosting Minecraft Keeper (Direct Azure IP)
+        run: |
+          # Berdiri di game selama 23 menit
+          KEEPALIVE_MINUTES=23 node scripts/play_hosting_keeper.js
+        env:
+          MC_HOST: cirobro.play.hosting
+          MC_PORT: 25565
+
+      - name: Self-Dispatch Next Keeper (Infinite Loop)
+        if: always()
+        run: |
+          echo "Regenerasi Runner Baru untuk estafet tanpa jeda..."
+          gh workflow run play-hosting-keeper.yml --repo ${{ github.repository }} || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
