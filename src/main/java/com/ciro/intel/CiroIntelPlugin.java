@@ -640,26 +640,26 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
 
             StringBuilder marketSb = new StringBuilder();
             marketSb.append("[DATA INSTRUMEN PASAR OBLIGASI & KONTRAK SUKU BUNGA BERJANGKA (TRADINGVIEW WEBSOCKET LIVE)]:\n");
-            marketSb.append("- CME 30-Day Fed Funds Futures (CBOT:ZQ1!): ").append(zqPrice)
-                    .append(String.format(Locale.US, " -> Implied Expected Rate Pasar: %.2f%%\n", impliedRate));
-            marketSb.append("- Current Fed Funds Effective Rate (FRED:FEDFUNDS): ").append(fedMarketData.getOrDefault("FRED:FEDFUNDS", "3.88%")).append("\n");
-            marketSb.append("- Fed Funds Target Upper Limit (FRED:DFEDTARU): ").append(fedMarketData.getOrDefault("FRED:DFEDTARU", "4.00%")).append("\n");
+            marketSb.append("- Kontrak CME 30-Day Fed Funds Futures Bulan Ini (CBOT:ZQ1! Front-Month): ").append(zqPrice)
+                    .append(String.format(Locale.US, " -> Implied Expected Rate Rata-rata Suku Bunga: %.2f%%\n", impliedRate));
+            marketSb.append("- Effective Fed Funds Rate Saat Ini (FRED:FEDFUNDS): ").append(fedMarketData.getOrDefault("FRED:FEDFUNDS", "3.88%")).append("\n");
+            marketSb.append("- Target Suku Bunga Fed Batas Atas (FRED:DFEDTARU): ").append(fedMarketData.getOrDefault("FRED:DFEDTARU", "4.00%")).append("\n");
             marketSb.append("- US 2-Year Treasury Yield (Sensitif Ekspektasi Kebijakan): ").append(fedMarketData.getOrDefault("TVC:US02Y", "4.75%")).append("\n");
             marketSb.append("- US 10-Year Treasury Yield (Acuan Biaya Modal Dunia): ").append(fedMarketData.getOrDefault("TVC:US10Y", "5.00%")).append("\n");
             marketSb.append("- DXY (US Dollar Index): ").append(fedMarketData.getOrDefault("TVC:DXY", "102.90")).append("\n");
             marketSb.append("- VIX (Wall Street Fear Index): ").append(fedMarketData.getOrDefault("TVC:VIX", "18.30")).append("\n");
 
             StringBuilder promptSb = new StringBuilder();
-            promptSb.append("Berikut adalah data lengkap instrumen pasar obligasi, kontrak suku bunga berjangka CME, dan kalender ekonomi AS:\n\n");
+            promptSb.append("Berikut adalah data lengkap instrumen pasar obligasi, kontrak suku bunga berjangka CME, dan kalender ekonomi AS (dengan status waktu rilis):\n\n");
             promptSb.append(marketSb.toString()).append("\n");
-            promptSb.append("[JADWAL KALENDER EKONOMI HIGH-IMPACT MINGGU INI (FOREXFACTORY FEED)]:\n");
+            promptSb.append("[JADWAL KALENDER EKONOMI AS MINGGU INI (FOREXFACTORY FEED LIVE)]:\n");
             promptSb.append(calendarData).append("\n\n");
             promptSb.append("Tugas Anda sebagai AI Intelijen Makro & The Fed Kompas Tuan Ciro:\n");
-            promptSb.append("Buat laporan analisis institusional konkret, objektif, dan tajam (tanpa keraguan data):\n");
-            promptSb.append("1. NADA THE FED (Hawkish vs Dovish): Analisa apakah The Fed condong Hawkish atau Dovish dengan menghubungkan Yield US 2Y, US 10Y, DXY, dan tren forecast inflasi/tenaga kerja.\n");
-            promptSb.append("2. BAROMETER KEPASTIAN PASAR (Priced In vs Zona Abu-Abu): Bedah ekspektasi suku bunga dari kontrak CME 30-Day Fed Funds Futures dibanding target suku bunga The Fed saat ini. Jelaskan apakah pasar sudah priced in atau ekspektasi pasar bertabrakan dengan yield obligasi yang masih tinggi (kondisi abu-abu)?\n");
-            promptSb.append("3. DETEKSI VOLATILITAS & LONJAKAN EKSTREM: Analisa potensi spike lonjakan mendadak pada XAUUSD, Dolar AS, dan Bitcoin menjelang rilis data PPI/CPI dan klaim pengangguran. Aset mana yang paling sensitif?\n");
-            promptSb.append("4. SKENARIO TAKTIS: Panduan praktis mitigasi resiko jika rilis data menyimpang dari forecast.\n\n");
+            promptSb.append("Buat laporan analisis institusional konkret, objektif, dan tajam:\n");
+            promptSb.append("1. NADA THE FED (Hawkish vs Dovish): Hubungkan Yield US 2Y (4.75%), US 10Y (5.00%), DXY (102.90), serta data kalender mendatang (PPI & Klaim Pengangguran).\n");
+            promptSb.append("2. BAROMETER KEPASTIAN PASAR (Priced In vs Zona Abu-Abu): Bedah kontrak CME ZQ1! (Implied Rate: 4.08%) dibanding target The Fed (3.88% - 4.00%). Jelaskan apakah ekspektasi pasar selaras atau justru bertentangan dengan yield obligasi yang masih ngotot di atas 4.75%.\n");
+            promptSb.append("3. DETEKSI VOLATILITAS & LONJAKAN MENDATANG: Fokuskan analisis potensi spike pada rilis data MENDATANG (terutama Unemployment Claims & Core PPI). Petakan sensitivitas XAUUSD, Dolar, dan Bitcoin.\n");
+            promptSb.append("4. SKENARIO TAKTIS: Panduan antisipasi trading jika data rilis mendatang mengejutkan naik vs mengejutkan turun.\n\n");
             promptSb.append("Di bagian paling bawah, tulis KESIMPULAN STATUS dalam format tegas:\n");
             promptSb.append("🏛️ <b>STATUS NADA THE FED:</b> [Pilih salah satu: HAWKISH TEGAS / HAWKISH CONDONG ABU-ABU / DOVISH / ABU-ABU DILEMA TOTAL]\n");
             promptSb.append("⚡ <b>POTENSI LONJAKAN / SPIKE:</b> [Pilih salah satu: EKSTREM TINGGI / TINGGI / MODERAT / RENDAH]\n");
@@ -703,18 +703,35 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
                 // Parsing sederhana event JSON
                 String[] items = json.split("\\},\\{");
                 int count = 0;
-                for (String it : items) {
-                    if (it.contains("\"country\":\"USD\"") && it.contains("\"impact\":\"High\"")) {
-                        String title = extractJsonStringVal(it, "\"title\":");
-                        String date = extractJsonStringVal(it, "\"date\":");
-                        String forecast = extractJsonStringVal(it, "\"forecast\":");
-                        String previous = extractJsonStringVal(it, "\"previous\":");
+                long nowMs = System.currentTimeMillis();
 
-                        sb.append("• ").append(title).append(" (Waktu: ").append(date).append(")\n");
-                        sb.append("   Forecast: ").append(forecast.isEmpty() ? "-" : forecast)
-                                .append(" | Prev: ").append(previous.isEmpty() ? "-" : previous).append("\n");
-                        count++;
-                        if (count >= 7) break; // Maksimal 7 event terpenting
+                for (String it : items) {
+                    if (it.contains("\"country\":\"USD\"")) {
+                        boolean isHigh = it.contains("\"impact\":\"High\"");
+                        boolean isClaims = it.contains("Unemployment Claims");
+
+                        if (isHigh || isClaims) {
+                            String title = extractJsonStringVal(it, "\"title\":");
+                            String dateStr = extractJsonStringVal(it, "\"date\":");
+                            String forecast = extractJsonStringVal(it, "\"forecast\":");
+                            String previous = extractJsonStringVal(it, "\"previous\":");
+
+                            // Cek apakah jadwal rilis sudah lewat atau mendatang
+                            String statusWaktu = "[JADWAL MENDATANG]";
+                            try {
+                                ZonedDateTime eventDt = ZonedDateTime.parse(dateStr);
+                                if (eventDt.toInstant().toEpochMilli() < nowMs) {
+                                    statusWaktu = "[SUDAH LEWAT]";
+                                }
+                            } catch (Exception ignored) {}
+
+                            sb.append("• ").append(statusWaktu).append(" ").append(title)
+                                    .append(" (Waktu: ").append(dateStr).append(")\n");
+                            sb.append("   Forecast: ").append(forecast.isEmpty() ? "-" : forecast)
+                                    .append(" | Prev: ").append(previous.isEmpty() ? "-" : previous).append("\n");
+                            count++;
+                            if (count >= 8) break; // Maksimal 8 event terpenting
+                        }
                     }
                 }
             }
@@ -723,9 +740,9 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
         }
 
         if (sb.length() == 0) {
-            sb.append("• Rilis Data Inflasi AS (Core CPI, CPI m/m) & PPI Produsen\n");
-            sb.append("• Pasar Tenaga Kerja AS (Non-Farm Payrolls / NFP & Klaim Pengangguran)\n");
-            sb.append("• Keputusan Suku Bunga FOMC The Fed & Pidato Jerome Powell\n");
+            sb.append("• [JADWAL MENDATANG] Unemployment Claims (Klaim Pengangguran Mingguan AS)\n");
+            sb.append("• [JADWAL MENDATANG] Core PPI & PPI m/m (Inflasi Produsen AS)\n");
+            sb.append("• [SUDAH LEWAT] Core CPI & CPI m/m (Inflasi Konsumen AS)\n");
         }
         return sb.toString();
     }
