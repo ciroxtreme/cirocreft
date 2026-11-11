@@ -50,9 +50,11 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
 
     private final Map<String, NewsItem> newsDatabase = new ConcurrentHashMap<>();
     private final AtomicBoolean isScanning = new AtomicBoolean(false);
+    private final AtomicBoolean isReporting = new AtomicBoolean(false);
     private int lastReportedDay = -1;
 
     private long telegramOffset = 0;
+    private final AtomicBoolean isPollingInProgress = new AtomicBoolean(false);
     private boolean isPollingRunning = true;
 
     // Konfigurasi AI Luna (OpenAI Compatible)
@@ -146,6 +148,9 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
     }
 
     private void pollTelegramUpdates() {
+        if (!isPollingInProgress.compareAndSet(false, true)) {
+            return; // Cegah pemanggilan paralel jika polling sebelumnya belum tuntas
+        }
         try {
             String urlStr = "https://api.telegram.org/bot" + botToken + "/getUpdates?timeout=2&offset=" + telegramOffset;
             URL url = URI.create(urlStr).toURL();
@@ -181,7 +186,10 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
                     handleTelegramChatCommand(rawText.trim());
                 }
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        } finally {
+            isPollingInProgress.set(false);
+        }
     }
 
     private void handleTelegramChatCommand(String text) {
@@ -205,6 +213,10 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
                 }
             }.runTaskAsynchronously(this);
         } else if (cmd.equals("/summary") || cmd.equals("/lapor") || cmd.equals("/kirim") || cmd.equals("summary")) {
+            if (!isReporting.compareAndSet(false, true)) {
+                sendTelegramMessage("⏳ <i>Laporan intelijen sedang dalam proses pembuatan. Mohon tunggu sebentar ya Tuan...</i>");
+                return;
+            }
             sendTelegramMessage("🧠 <b>AI Luna sedang menyiapkan 3 Laporan Intelijen Lengkap untuk Tuan Ciro:</b>\n" +
                     "1️⃣ Radar Berita 3 Sektor (IDX, Gold, BTC)\n" +
                     "2️⃣ Matriks Pasar & Kripto Global (TradingView WebSocket)\n" +
@@ -213,9 +225,13 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
             new BukkitRunnable() {
                 @Override
                 public void run() {
-                    sendMidnightSummary(true);
-                    sendGlobalMacroMatrix();
-                    sendFedCompassCalendar();
+                    try {
+                        sendMidnightSummary(true);
+                        sendGlobalMacroMatrix();
+                        sendFedCompassCalendar();
+                    } finally {
+                        isReporting.set(false);
+                    }
                 }
             }.runTaskAsynchronously(this);
         } else if (cmd.equals("/fed") || cmd.equals("/kalender") || cmd.equals("/kompas")) {
