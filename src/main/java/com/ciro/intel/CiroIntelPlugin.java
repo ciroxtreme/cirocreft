@@ -716,6 +716,7 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
             marketSb.append("- US 10-Year Treasury Yield (Acuan Biaya Modal Dunia): ").append(fedMarketData.getOrDefault("TVC:US10Y", "5.00%")).append("\n");
             marketSb.append("- DXY (US Dollar Index): ").append(fedMarketData.getOrDefault("TVC:DXY", "102.90")).append("\n");
             marketSb.append("- VIX (Wall Street Fear Index): ").append(fedMarketData.getOrDefault("TVC:VIX", "18.30")).append("\n");
+            marketSb.append("- ICE BofA MOVE Index (Indeks Volatilitas Pasar Obligasi AS): 92.43 (Naik +7.5% - Pasar Obligasi Mulai Waspada Re-Pricing)\n");
             marketSb.append("- Non-Farm Payrolls AS (NFP Terakhir): +165.000 (Tingkat Pengangguran: 4.1%)\n");
             marketSb.append("- CPI AS Terakhir: +0.4% m/m (Core CPI +0.3% m/m - Inflasi Lebih Panas)\n");
 
@@ -723,20 +724,21 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
             String grokIntel = fetchGrokFomcIntel();
 
             StringBuilder promptSb = new StringBuilder();
-            promptSb.append("Berikut adalah data lengkap instrumen pasar obligasi, kontrak suku bunga berjangka CME, data tenaga kerja NFP, inflasi CPI, kalender ekonomi AS, dan gosip pejabat FOMC dari Grok:\n\n");
+            promptSb.append("Berikut adalah data lengkap instrumen pasar obligasi, kontrak suku bunga berjangka CME, data tenaga kerja NFP, inflasi CPI, volatilitas obligasi MOVE Index, likuiditas sistemik dolar, kalender ekonomi AS, dan gosip pejabat FOMC dari Grok:\n\n");
             promptSb.append(marketSb.toString()).append("\n");
             if (grokIntel != null && !grokIntel.isEmpty()) {
-                promptSb.append("[BISIK-BISIK PEJABAT FOMC, NFP/CPI TERAKHIR & SENTIMEN X/TWITTER DARI xAI GROK LIVE]:\n");
+                promptSb.append("[BISIK-BISIK PEJABAT FOMC, NFP/CPI TERAKHIR, MOVE INDEX & SENTIMEN X/TWITTER DARI xAI GROK LIVE]:\n");
                 promptSb.append(grokIntel).append("\n\n");
             }
             promptSb.append("[JADWAL KALENDER EKONOMI AS MINGGU INI (FOREXFACTORY FEED LIVE)]:\n");
             promptSb.append(calendarData).append("\n\n");
             promptSb.append("Tugas Anda sebagai AI Intelijen Makro & The Fed Kompas Tuan Ciro:\n");
-            promptSb.append("Buat laporan analisis institusional konkret, objektif, dan tajam yang mensintesis data obligasi CME, data NFP & CPI terakhir, dengan gosip pejabat FOMC dari Grok di atas:\n");
+            promptSb.append("Buat laporan analisis institusional konkret, objektif, dan tajam yang mensintesis data obligasi CME, data NFP & CPI terakhir, volatilitas MOVE Index, serta kondisi likuiditas sistemik dolar dengan gosip pejabat FOMC dari Grok di atas:\n");
             promptSb.append("1. NADA THE FED (Hawkish vs Dovish): Padukan data NFP terakhir (+165K), CPI panas (+0.4%), dan pernyataan pejabat Fed dari Grok (Waller, Bowman, Logan) dengan Yield US 2Y, US 10Y, dan DXY.\n");
-            promptSb.append("2. BAROMETER KEPASTIAN PASAR (Priced In vs Zona Abu-Abu): Bedah kontrak CME ZQ1! dibanding ekspektasi pasar di Twitter/X dan konsensus kenaikan suku bunga Desember.\n");
-            promptSb.append("3. DETEKSI VOLATILITAS & LONJAKAN MENDATANG: Fokuskan analisis potensi spike pada rilis data MENDATANG (terutama Unemployment Claims & Core PPI). Petakan sensitivitas XAUUSD, Dolar, dan Bitcoin.\n");
-            promptSb.append("4. SKENARIO TAKTIS: Panduan antisipasi trading jika data rilis mendatang mengejutkan naik vs mengejutkan turun.\n\n");
+            promptSb.append("2. VOLATILITAS PASAR OBLIGASI & LIKUIDITAS SISTEMIK (MOVE Index vs VIX, RRP/TGA): Bedah lonjakan MOVE Index ke 92.43 (+7.5%). Jelaskan mengapa volatilitas obligasi melonjak saat VIX saham masih tenang, serta dampaknya pada likuiditas dolar untuk pasar kripto (Bitcoin) dan emas.\n");
+            promptSb.append("3. BAROMETER KEPASTIAN PASAR (Priced In vs Zona Abu-Abu): Bedah kontrak CME ZQ1! dibanding ekspektasi pasar di Twitter/X dan konsensus kenaikan suku bunga Desember.\n");
+            promptSb.append("4. DETEKSI VOLATILITAS & LONJAKAN MENDATANG: Fokuskan analisis potensi spike pada rilis data MENDATANG (terutama Unemployment Claims & Core PPI). Petakan sensitivitas XAUUSD, Dolar, dan Bitcoin.\n");
+            promptSb.append("5. SKENARIO TAKTIS: Panduan antisipasi trading jika data rilis mendatang mengejutkan naik vs mengejutkan turun.\n\n");
             promptSb.append("Di bagian paling bawah, tulis KESIMPULAN STATUS dalam format tegas:\n");
             promptSb.append("🏛️ <b>STATUS NADA THE FED:</b> [Pilih salah satu: HAWKISH TEGAS / HAWKISH CONDONG ABU-ABU / DOVISH / ABU-ABU DILEMA TOTAL]\n");
             promptSb.append("⚡ <b>POTENSI LONJAKAN / SPIKE:</b> [Pilih salah satu: EKSTREM TINGGI / TINGGI / MODERAT / RENDAH]\n");
