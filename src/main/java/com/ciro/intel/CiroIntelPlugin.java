@@ -558,6 +558,74 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
         return null;
     }
 
+    private String fetchGrokFomcIntel() {
+        try {
+            getLogger().info("[Grok Bridge] Menghubungi ciro-grok-bridge untuk intel FOMC & sentimen Twitter/X...");
+            URL url = URI.create("https://ciro-grok-bridge.ciroxtreme.workers.dev/fomc-intel").toURL();
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+            conn.setConnectTimeout(65000);
+            conn.setReadTimeout(65000);
+
+            if (conn.getResponseCode() == 200) {
+                StringBuilder sb = new StringBuilder();
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) sb.append(line);
+                }
+                String resp = sb.toString();
+                String intelKey = "\"intel\":";
+                int idx = resp.indexOf(intelKey);
+                if (idx != -1) {
+                    int quoteStart = resp.indexOf("\"", idx + intelKey.length());
+                    if (quoteStart != -1) {
+                        StringBuilder extracted = new StringBuilder();
+                        boolean escaped = false;
+                        for (int i = quoteStart + 1; i < resp.length(); i++) {
+                            char c = resp.charAt(i);
+                            if (escaped) {
+                                if (c == 'n') extracted.append('\n');
+                                else if (c == 'r') extracted.append('\r');
+                                else if (c == 't') extracted.append('\t');
+                                else if (c == '\"') extracted.append('\"');
+                                else if (c == '\\') extracted.append('\\');
+                                else if (c == 'u' && i + 4 < resp.length()) {
+                                    try {
+                                        String hex = resp.substring(i + 1, i + 5);
+                                        extracted.append((char) Integer.parseInt(hex, 16));
+                                        i += 4;
+                                    } catch (Exception e) {
+                                        extracted.append(c);
+                                    }
+                                } else {
+                                    extracted.append(c);
+                                }
+                                escaped = false;
+                            } else if (c == '\\') {
+                                escaped = true;
+                            } else if (c == '\"') {
+                                break;
+                            } else {
+                                extracted.append(c);
+                            }
+                        }
+                        String text = extracted.toString().trim();
+                        if (!text.isEmpty()) {
+                            getLogger().info("[Grok Bridge] Berhasil mendapatkan intel FOMC (" + text.length() + " karakter).");
+                            return text;
+                        }
+                    }
+                }
+            } else {
+                getLogger().warning("[Grok Bridge] Response code bukan 200: " + conn.getResponseCode());
+            }
+        } catch (Exception e) {
+            getLogger().warning("[Grok Bridge] Gagal mengambil intel FOMC: " + e.getMessage());
+        }
+        return null;
+    }
+
     private void sendGlobalMacroMatrix() {
         try {
             // Instrumen Matriks Global + Indeks Kripto
@@ -649,15 +717,22 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
             marketSb.append("- DXY (US Dollar Index): ").append(fedMarketData.getOrDefault("TVC:DXY", "102.90")).append("\n");
             marketSb.append("- VIX (Wall Street Fear Index): ").append(fedMarketData.getOrDefault("TVC:VIX", "18.30")).append("\n");
 
+            // 1. Ambil intelijen gosip pejabat FOMC & konsensus X/Twitter via Grok Bridge
+            String grokIntel = fetchGrokFomcIntel();
+
             StringBuilder promptSb = new StringBuilder();
-            promptSb.append("Berikut adalah data lengkap instrumen pasar obligasi, kontrak suku bunga berjangka CME, dan kalender ekonomi AS (dengan status waktu rilis):\n\n");
+            promptSb.append("Berikut adalah data lengkap instrumen pasar obligasi, kontrak suku bunga berjangka CME, kalender ekonomi AS, dan gosip pejabat FOMC dari Grok:\n\n");
             promptSb.append(marketSb.toString()).append("\n");
+            if (grokIntel != null && !grokIntel.isEmpty()) {
+                promptSb.append("[BISIK-BISIK PEJABAT FOMC & SENTIMEN X/TWITTER DARI xAI GROK LIVE]:\n");
+                promptSb.append(grokIntel).append("\n\n");
+            }
             promptSb.append("[JADWAL KALENDER EKONOMI AS MINGGU INI (FOREXFACTORY FEED LIVE)]:\n");
             promptSb.append(calendarData).append("\n\n");
             promptSb.append("Tugas Anda sebagai AI Intelijen Makro & The Fed Kompas Tuan Ciro:\n");
-            promptSb.append("Buat laporan analisis institusional konkret, objektif, dan tajam:\n");
-            promptSb.append("1. NADA THE FED (Hawkish vs Dovish): Hubungkan Yield US 2Y (4.75%), US 10Y (5.00%), DXY (102.90), serta data kalender mendatang (PPI & Klaim Pengangguran).\n");
-            promptSb.append("2. BAROMETER KEPASTIAN PASAR (Priced In vs Zona Abu-Abu): Bedah kontrak CME ZQ1! (Implied Rate: 4.08%) dibanding target The Fed (3.88% - 4.00%). Jelaskan apakah ekspektasi pasar selaras atau justru bertentangan dengan yield obligasi yang masih ngotot di atas 4.75%.\n");
+            promptSb.append("Buat laporan analisis institusional konkret, objektif, dan tajam yang mensintesis data obligasi CME dengan gosip pejabat FOMC dari Grok di atas:\n");
+            promptSb.append("1. NADA THE FED (Hawkish vs Dovish): Padukan pernyataan terbaru pejabat Fed dari Grok (seperti Waller, Bowman, Logan) dengan Yield US 2Y, US 10Y, dan DXY.\n");
+            promptSb.append("2. BAROMETER KEPASTIAN PASAR (Priced In vs Zona Abu-Abu): Bedah kontrak CME ZQ1! dibanding ekspektasi pasar di Twitter/X dan konsensus kenaikan suku bunga Desember.\n");
             promptSb.append("3. DETEKSI VOLATILITAS & LONJAKAN MENDATANG: Fokuskan analisis potensi spike pada rilis data MENDATANG (terutama Unemployment Claims & Core PPI). Petakan sensitivitas XAUUSD, Dolar, dan Bitcoin.\n");
             promptSb.append("4. SKENARIO TAKTIS: Panduan antisipasi trading jika data rilis mendatang mengejutkan naik vs mengejutkan turun.\n\n");
             promptSb.append("Di bagian paling bawah, tulis KESIMPULAN STATUS dalam format tegas:\n");
@@ -668,12 +743,15 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
 
             String aiAnalysis = callLunaAI(promptSb.toString());
             if (aiAnalysis != null && !aiAnalysis.trim().isEmpty()) {
+                String footer = (grokIntel != null && !grokIntel.isEmpty())
+                        ? "🎯 <i>Status: Analisis The Fed Compass hasil kolaborasi xAI Grok (Sentimen & Pidato FOMC) + AI Luna GPT-6 (Sintesis Makro).</i>"
+                        : "🎯 <i>Status: Analisis The Fed Compass dihasilkan langsung oleh AI Luna (GPT-6).</i>";
                 sendTelegramMessage("🏛️ <b>KOMPAS THE FED, KALENDER EKONOMI & DETEKSI LONJAKAN</b>\n" +
-                        "⏱ <i>Analisis Berbasis CME Futures & TradingView WebSocket</i>\n" +
+                        "⏱ <i>Analisis Berbasis CME Futures, xAI Grok & TradingView WebSocket</i>\n" +
                         "━━━━━━━━━━━━━━━━━━━━━━━━━\n\n" +
                         aiAnalysis +
                         "\n\n━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
-                        "🎯 <i>Status: Analisis The Fed Compass 100% Konkret dihasilkan oleh AI Luna (GPT-6).</i>");
+                        footer);
             } else {
                 sendTelegramMessage("🏛️ <b>DATA THE FED & KALENDER EKONOMI (RAW):</b>\n\n" + marketSb.toString() + "\n" + calendarData);
             }
