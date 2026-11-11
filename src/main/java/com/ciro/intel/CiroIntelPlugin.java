@@ -546,13 +546,16 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
 
     private void sendGlobalMacroMatrix() {
         try {
-            // Instrumen Matriks Global
+            // Instrumen Matriks Global + Indeks Kripto
             String[] tvSymbols = new String[]{
-                    "TVC:DXY", "TVC:USOIL", "OANDA:XAUUSD", "SP:SPX", "NASDAQ:NDX",
-                    "INDEX:NKY", "INDEX:HSI", "INDEX:DAX", "TVC:US10Y", "TVC:VIX"
+                    "TVC:DXY", "TVC:USOIL", "OANDA:XAUUSD", "INDEX:BTCUSD",
+                    "CRYPTOCAP:BTC.D", "CRYPTOCAP:USDT.D", "CRYPTOCAP:TOTAL",
+                    "SP:SPX", "NASDAQ:NDX", "INDEX:NKY", "INDEX:HSI", "INDEX:DAX",
+                    "TVC:US10Y", "TVC:VIX"
             };
             String[] names = new String[]{
-                    "DXY (US Dollar Index)", "Minyak Mentah (WTI Crude)", "Emas (Gold / XAUUSD)",
+                    "DXY (US Dollar Index)", "Minyak Mentah (WTI Crude)", "Emas (Gold / XAUUSD)", "Bitcoin Spot (BTCUSD)",
+                    "BTC Dominance (BTC.D %)", "USDT Dominance (USDT.D % - Cash)", "Total Crypto Market Cap",
                     "S&P 500 (Wall St)", "Nasdaq 100 (Tech US)", "Nikkei 225 (Jepang)",
                     "Hang Seng (China/HK)", "DAX (Jerman/Eropa)", "Yield US 10Y", "VIX (Wall St Fear Index)"
             };
@@ -561,7 +564,7 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
             Map<String, String> tvData = fetchTradingViewQuotes(tvSymbols);
 
             StringBuilder matrixData = new StringBuilder();
-            matrixData.append("[DATA LIVE TRADINGVIEW WEBSOCKET — INDIKATOR KESEHATAN EKONOMI DUNIA]:\n");
+            matrixData.append("[DATA LIVE TRADINGVIEW WEBSOCKET — INDIKATOR KESEHATAN EKONOMI & KRIPTO DUNIA]:\n");
             for (int i = 0; i < tvSymbols.length; i++) {
                 String sym = tvSymbols[i];
                 String name = names[i];
@@ -574,15 +577,16 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
             }
 
             StringBuilder promptSb = new StringBuilder();
-            promptSb.append("Berikut adalah data live indikator kesehatan ekonomi dunia (Zero Delay dari TradingView WebSocket):\n\n");
+            promptSb.append("Berikut adalah data live indikator kesehatan ekonomi & kripto dunia (Zero Delay TradingView WebSocket):\n\n");
             promptSb.append(matrixData.toString()).append("\n");
             promptSb.append("Tugas Anda sebagai AI Intelijen Pasar Tuan Ciro:\n");
-            promptSb.append("Buat analisis Matriks Makro & Kesehatan Ekonomi Dunia:\n");
-            promptSb.append("1. Hubungkan pergerakan DXY, Yield US 10Y, Minyak, Emas, dan Bursa Saham Dunia (AS, Asia, Eropa). Jelaskan apa yang sedang terjadi di peta modal global (aliran likuiditas).\n");
-            promptSb.append("2. Status Ketakutan Pasar: Analisa level VIX dan sentimen Risk-On vs Risk-Off.\n");
-            promptSb.append("3. Di bagian paling bawah, tulis KESIMPULAN STATUS DUNIA dalam format tegas:\n");
+            promptSb.append("Buat analisis Matriks Makro, Kripto & Kesehatan Ekonomi Dunia:\n");
+            promptSb.append("1. Peta Likuiditas Makro: Hubungkan DXY, Yield US 10Y, Minyak, Emas, dan Bursa Saham AS/Asia/Eropa.\n");
+            promptSb.append("2. Peta Pasar Kripto: Analisa BTC, BTC Dominance (BTC.D %), USDT Dominance (USDT.D %), dan Total Crypto Market Cap. Jelaskan apakah uang sedang lari ke Bitcoin, terjadi rotasi Altseason, atau trader panik kabur ke cash USDT.\n");
+            promptSb.append("3. Status Ketakutan Pasar: Hubungkan VIX Wall Street dan USDT.D Kripto (Risk-On vs Risk-Off).\n");
+            promptSb.append("4. Di bagian paling bawah, tulis KESIMPULAN STATUS DUNIA dalam format tegas:\n");
             promptSb.append("🌐 <b>STATUS KESEHATAN EKONOMI DUNIA:</b> [Pilih salah satu misal: RISK-OFF WASPADA / RISK-ON MODERAT / STAGFLASI GEOPOLITIK / PANIK / KONSOLIDASI]\n");
-            promptSb.append("👉 <b>Catatan Kunci:</b> (1-2 kalimat vonis kesehatan ekonomi global)\n\n");
+            promptSb.append("👉 <b>Catatan Kunci:</b> (1-2 kalimat vonis kesehatan ekonomi & kripto global)\n\n");
             promptSb.append("Gunakan format teks HTML Telegram (<b>bold</b>, <i>italic</i>, <code>code</code>). DILARANG menggunakan tanda dolar ($) atau formula LaTeX. Buat tajam, lugas, dan padat.");
 
             String aiAnalysis = callLunaAI(promptSb.toString());
@@ -592,9 +596,9 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
                         "━━━━━━━━━━━━━━━━━━━━━━━━━\n\n" +
                         aiAnalysis +
                         "\n\n━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
-                        "🎯 <i>Status: Analisis Matriks Makro dihasilkan oleh AI Luna (GPT-6).</i>");
+                        "🎯 <i>Status: Analisis Matriks Makro & Kripto dihasilkan oleh AI Luna (GPT-6).</i>");
             } else {
-                sendTelegramMessage("🌐 <b>MATRIKS PASAR GLOBAL (RAW):</b>\n\n" + matrixData.toString());
+                sendTelegramMessage("🌐 <b>MATRIKS PASAR GLOBAL & KRIPTO (RAW):</b>\n\n" + matrixData.toString());
             }
         } catch (Exception e) {
             getLogger().warning("[MacroMatrix] Gagal: " + e.getMessage());
