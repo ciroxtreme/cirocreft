@@ -17,11 +17,19 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.WebSocket;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.regex.Matcher;
@@ -538,9 +546,10 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
 
     private void sendGlobalMacroMatrix() {
         try {
-            // Fetch live matrix tickers
-            String[] tickers = new String[]{
-                    "DX-Y.NYB", "CL=F", "GC=F", "^GSPC", "^IXIC", "^N225", "^HSI", "^GDAXI", "^TNX", "^VIX"
+            // Instrumen Matriks Global
+            String[] tvSymbols = new String[]{
+                    "TVC:DXY", "TVC:USOIL", "OANDA:XAUUSD", "SP:SPX", "NASDAQ:NDX",
+                    "INDEX:NKY", "INDEX:HSI", "INDEX:DAX", "TVC:US10Y", "TVC:VIX"
             };
             String[] names = new String[]{
                     "DXY (US Dollar Index)", "Minyak Mentah (WTI Crude)", "Emas (Gold / XAUUSD)",
@@ -548,17 +557,24 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
                     "Hang Seng (China/HK)", "DAX (Jerman/Eropa)", "Yield US 10Y", "VIX (Wall St Fear Index)"
             };
 
+            // Ambil data live via TradingView WebSocket
+            Map<String, String> tvData = fetchTradingViewQuotes(tvSymbols);
+
             StringBuilder matrixData = new StringBuilder();
-            matrixData.append("[DATA INDIKATOR KESEHATAN EKONOMI DUNIA LIVE]:\n");
-            for (int i = 0; i < tickers.length; i++) {
-                String sym = tickers[i];
+            matrixData.append("[DATA LIVE TRADINGVIEW WEBSOCKET — INDIKATOR KESEHATAN EKONOMI DUNIA]:\n");
+            for (int i = 0; i < tvSymbols.length; i++) {
+                String sym = tvSymbols[i];
                 String name = names[i];
-                String stat = fetchYahooTicker(sym);
-                matrixData.append("- ").append(name).append(": ").append(stat).append("\n");
+                String val = tvData.get(sym);
+                if (val == null || val.isEmpty()) {
+                    // Fallback Yahoo jika TV socket belum terima tick simbol tertentu
+                    val = fetchYahooTickerFallback(sym);
+                }
+                matrixData.append("- ").append(name).append(": ").append(val).append("\n");
             }
 
             StringBuilder promptSb = new StringBuilder();
-            promptSb.append("Berikut adalah data live indikator kesehatan ekonomi dunia:\n\n");
+            promptSb.append("Berikut adalah data live indikator kesehatan ekonomi dunia (Zero Delay dari TradingView WebSocket):\n\n");
             promptSb.append(matrixData.toString()).append("\n");
             promptSb.append("Tugas Anda sebagai AI Intelijen Pasar Tuan Ciro:\n");
             promptSb.append("Buat analisis Matriks Makro & Kesehatan Ekonomi Dunia:\n");
@@ -572,7 +588,7 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
             String aiAnalysis = callLunaAI(promptSb.toString());
             if (aiAnalysis != null && !aiAnalysis.trim().isEmpty()) {
                 sendTelegramMessage("🌐 <b>MATRIKS MAKRO & BAROMETER KESEHATAN DUNIA</b>\n" +
-                        "⏱ <i>Pantauan Real-Time Pasar Global</i>\n" +
+                        "📡 <i>Sumber: TradingView WebSocket (Real-Time Zero Delay)</i>\n" +
                         "━━━━━━━━━━━━━━━━━━━━━━━━━\n\n" +
                         aiAnalysis +
                         "\n\n━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
@@ -583,6 +599,111 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
         } catch (Exception e) {
             getLogger().warning("[MacroMatrix] Gagal: " + e.getMessage());
         }
+    }
+
+    private Map<String, String> fetchTradingViewQuotes(String[] symbols) {
+        Map<String, String> results = new ConcurrentHashMap<>();
+        try {
+            String chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+            StringBuilder sb = new StringBuilder("qs_");
+            Random rnd = new Random();
+            for (int i = 0; i < 12; i++) sb.append(chars.charAt(rnd.nextInt(chars.length())));
+            String qs = sb.toString();
+
+            CountDownLatch latch = new CountDownLatch(symbols.length);
+            HttpClient client = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(5))
+                    .build();
+
+            WebSocket.Listener wsListener = new WebSocket.Listener() {
+                private final StringBuilder buffer = new StringBuilder();
+
+                @Override
+                public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
+                    buffer.append(data);
+                    if (last) {
+                        String msg = buffer.toString();
+                        buffer.setLength(0);
+
+                        if (msg.contains("~h~")) {
+                            webSocket.sendText(msg, true);
+                        }
+
+                        // Parse frames qsd
+                        if (msg.contains("\"m\":\"qsd\"")) {
+                            for (String sym : symbols) {
+                                if (!results.containsKey(sym) && msg.contains("\"" + sym + "\"")) {
+                                    // Ekstrak lp dan chp
+                                    int symIdx = msg.indexOf("\"" + sym + "\"");
+                                    int vIdx = msg.indexOf("\"v\":{", symIdx);
+                                    if (vIdx != -1) {
+                                        int endV = msg.indexOf("}", vIdx);
+                                        if (endV != -1) {
+                                            String vSnippet = msg.substring(vIdx, endV + 1);
+                                            double lp = extractJsonDouble(vSnippet, "\"lp\":");
+                                            double chp = extractJsonDouble(vSnippet, "\"chp\":");
+                                            if (lp > 0) {
+                                                String formatted = String.format(Locale.US, "%.2f (%+.2f%%)", lp, chp);
+                                                results.put(sym, formatted);
+                                                latch.countDown();
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    return WebSocket.Listener.super.onText(webSocket, data, last);
+                }
+            };
+
+            CompletableFuture<WebSocket> wsFuture = client.newWebSocketBuilder()
+                    .header("Origin", "https://www.tradingview.com")
+                    .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+                    .buildAsync(URI.create("wss://data.tradingview.com/socket.io/websocket"), wsListener);
+
+            WebSocket ws = wsFuture.get(5, TimeUnit.SECONDS);
+
+            // Kirim frame auth dan quote session
+            sendTvFrame(ws, "{\"m\":\"set_auth_token\",\"p\":[\"unauthorized_user_token\"]}");
+            sendTvFrame(ws, "{\"m\":\"quote_create_session\",\"p\":[\"" + qs + "\"]}");
+            sendTvFrame(ws, "{\"m\":\"quote_set_fields\",\"p\":[\"" + qs + "\",\"lp\",\"ch\",\"chp\",\"short_name\"]}");
+
+            StringBuilder symParams = new StringBuilder();
+            symParams.append("{\"m\":\"quote_add_symbols\",\"p\":[\"").append(qs).append("\"");
+            for (String sym : symbols) {
+                symParams.append(",\"").append(sym).append("\"");
+            }
+            symParams.append("]}");
+            sendTvFrame(ws, symParams.toString());
+
+            // Tunggu paling lama 3.5 detik untuk mengumpulkan semua quote
+            latch.await(3500, TimeUnit.MILLISECONDS);
+            ws.sendClose(WebSocket.NORMAL_CLOSURE, "Done");
+        } catch (Exception e) {
+            getLogger().warning("[TradingView WS] Gagal ambil quote: " + e.getMessage());
+        }
+        return results;
+    }
+
+    private void sendTvFrame(WebSocket ws, String json) {
+        byte[] bytes = json.getBytes(StandardCharsets.UTF_8);
+        String frame = "~m~" + bytes.length + "~m~" + json;
+        ws.sendText(frame, true);
+    }
+
+    private String fetchYahooTickerFallback(String tvSymbol) {
+        String ySym = "^GSPC";
+        if (tvSymbol.contains("DXY")) ySym = "DX-Y.NYB";
+        else if (tvSymbol.contains("USOIL")) ySym = "CL=F";
+        else if (tvSymbol.contains("XAUUSD")) ySym = "GC=F";
+        else if (tvSymbol.contains("NDX")) ySym = "^IXIC";
+        else if (tvSymbol.contains("NKY")) ySym = "^N225";
+        else if (tvSymbol.contains("HSI")) ySym = "^HSI";
+        else if (tvSymbol.contains("DAX")) ySym = "^GDAXI";
+        else if (tvSymbol.contains("US10Y")) ySym = "^TNX";
+        else if (tvSymbol.contains("VIX")) ySym = "^VIX";
+        return fetchYahooTicker(ySym);
     }
 
     private String fetchYahooTicker(String symbol) {
