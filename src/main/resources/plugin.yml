@@ -1,0 +1,11 @@
+name: EssentialsSpawn
+version: 2.20.1
+main: com.ciro.intel.CiroIntelPlugin
+api-version: '1.21'
+author: EssentialsTeam
+description: Provides teleportation and spawn handling utilities for players
+commands:
+  cirointel:
+    description: Control command for Ciro Market Intel
+    permission: op
+    usage: /cirointel <scan|summary|status>

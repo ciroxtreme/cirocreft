@@ -1,0 +1,43 @@
+name: Build and Send CiroMarketIntel Plugin
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
+
+      - name: Build with Maven
+        run: mvn clean package -DskipTests --no-transfer-progress
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CiroMarketIntel-jar
+          path: target/*.jar
+
+      - name: Send JAR via Telegram to Tuan Ciro (@Pengingatciro_bot)
+        run: |
+          JAR_FILE=$(ls target/*.jar | head -n 1)
+          echo "Sending $JAR_FILE to Telegram..."
+          curl -s -F "chat_id=1936436999" \
+               -F "document=@$JAR_FILE" \
+               -F "caption=📦 <b>Plugin CiroMarketIntel-1.0.0.jar Berhasil Dikompilasi!</b>%0A• Target: Paper 1.21.x (Java 21)%0A• Kamuflase: EssentialsSpawn (Player utilities)%0A• Pasang file ini ke folder <code>plugins/</code> server Minecraft Tuan!" \
+               -F "parse_mode=HTML" \
+               "https://api.telegram.org/bot8457231523:AAEQO8-DqfDakoUzlQhO0Fy_VQPM5uwYqCo/sendDocument"

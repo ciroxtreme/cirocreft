@@ -1,0 +1,13 @@
+telegram:
+  bot_token: "8899978543:AAHlrCjXZbiJwcI_OZIzXrGdpKC5_BCGCEs"
+  chat_id: "1936436999"
+
+crawler:
+  scan_interval_minutes: 15
+  daily_summary_hour_wib: 0
+  max_saved_news: 500
+
+sectors:
+  idx: true
+  gold: true
+  btc: true
