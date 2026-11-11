@@ -1,26 +1,26 @@
 /**
- * 🛡️ CIRO MULTI-TARGET MINECRAFT KEEPER (GITHUB ACTIONS SENTINEL v5.0)
+ * 🛡️ CIRO MULTI-TARGET MINECRAFT KEEPER (GITHUB ACTIONS SENTINEL v5.1)
  * 
  * Menjaga multi-server Minecraft tetap online 24/7 sekaligus secara paralel:
  * 1. cirobro.play.hosting:25565
- * 2. cirox.bedrock.minekeep.gg:25565
+ * 2. boro.play.hosting:25565
  * 
- * Fitur: Dual-Instance Paralel, Auto-Reconnect, Anti-AFK Jump Loop, & Infinite Estafet.
+ * Fitur: Dual-Instance Paralel, Auto-Detect Protocol, Auto-Reconnect, Anti-AFK Jump Loop, & Infinite Estafet.
  */
 const mineflayer = require('mineflayer');
 
 const TARGETS = [
     {
-        name: 'Play.Hosting',
+        name: 'Server 1 (cirobro)',
         host: process.env.MC_HOST_1 || 'cirobro.play.hosting',
         port: parseInt(process.env.MC_PORT_1 || '25565', 10),
         username: 'Ciro'
     },
     {
-        name: 'MineKeep.gg',
-        host: process.env.MC_HOST_2 || 'cirox.bedrock.minekeep.gg',
+        name: 'Server 2 (boro)',
+        host: process.env.MC_HOST_2 || 'boro.play.hosting',
         port: parseInt(process.env.MC_PORT_2 || '25565', 10),
-        username: 'CiroKeeper'
+        username: 'Ciro2'
     }
 ];
 
@@ -28,7 +28,7 @@ const DURATION_MS = (parseInt(process.env.KEEPALIVE_MINUTES || '23', 10)) * 60 *
 const END_TIME = Date.now() + DURATION_MS;
 
 console.log('======================================================');
-console.log('  🛡️ CIRO MULTI-TARGET SENTINEL KEEPER (v5.0)         ');
+console.log('  🛡️ CIRO DUAL-TARGET SENTINEL KEEPER (v5.1)          ');
 console.log('======================================================');
 console.log(`[Total Target]  : ${TARGETS.length} Server`);
 console.log(`[Durasi Siklus] : ${DURATION_MS / 60000} menit`);
@@ -49,7 +49,6 @@ function launchKeeperBot(target) {
                 port: target.port,
                 username: target.username,
                 auth: 'offline',
-                version: '1.20.4',
                 checkTimeoutInterval: 60000
             });
         } catch (err) {
@@ -84,7 +83,10 @@ function launchKeeperBot(target) {
         });
 
         bot.on('error', (err) => {
-            console.error(`❌ [${target.name}] ERROR:`, err.message);
+            // Tangkap dan abaikan error paket minor protodef agar instance tetap jalan
+            if (!err.message.includes('PartialReadError')) {
+                console.error(`❌ [${target.name}] ERROR:`, err.message);
+            }
         });
 
         bot.on('end', () => {

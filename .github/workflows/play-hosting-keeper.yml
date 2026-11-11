@@ -36,14 +36,14 @@ jobs:
       - name: Install Mineflayer
         run: npm install mineflayer@4.39.0
 
-      - name: Run Dual Minecraft Keepers (Play.Hosting + MineKeep.gg)
+      - name: Run Dual Minecraft Keepers (cirobro + boro play.hosting)
         run: |
           # Berdiri di kedua server selama 23 menit
           KEEPALIVE_MINUTES=23 node scripts/play_hosting_keeper.js
         env:
           MC_HOST_1: cirobro.play.hosting
           MC_PORT_1: 25565
-          MC_HOST_2: cirox.bedrock.minekeep.gg
+          MC_HOST_2: boro.play.hosting
           MC_PORT_2: 25565
 
       - name: Self-Dispatch Next Keeper (Infinite Loop)
