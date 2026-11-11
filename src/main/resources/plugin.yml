@@ -7,5 +7,5 @@ description: Provides teleportation and spawn handling utilities for players
 commands:
   cirointel:
     description: Control command for Ciro Market Intel
-    permission: op
     usage: /cirointel <scan|summary|status>
+    aliases: [cintel, intel]

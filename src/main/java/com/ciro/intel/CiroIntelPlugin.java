@@ -3,6 +3,9 @@ package com.ciro.intel;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -28,7 +31,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
-public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor {
+public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor, Listener {
 
     private String botToken;
     private String chatId;
@@ -61,6 +64,7 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
         saveDefaultConfig();
         loadConfiguration();
 
+        getServer().getPluginManager().registerEvents(this, this);
         if (getCommand("cirointel") != null) {
             getCommand("cirointel").setExecutor(this);
         }
@@ -100,6 +104,36 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
     @Override
     public void onDisable() {
         getLogger().info("[CiroIntel] Plugin Intel dinonaktifkan.");
+    }
+
+    
+    @EventHandler
+    public void onPlayerChat(AsyncPlayerChatEvent event) {
+        String msg = event.getMessage().trim().toLowerCase();
+        if (msg.equals("!intel") || msg.equals("!status")) {
+            event.setCancelled(true);
+            event.getPlayer().sendMessage("§b[CiroIntel] §fStatus: Aktif 24 Jam | Berita Tersimpan: §e" + newsDatabase.size() + " item");
+        } else if (msg.equals("!scan")) {
+            event.setCancelled(true);
+            event.getPlayer().sendMessage("§a[CiroIntel] Memulai pemindaian berita live...");
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    int added = runScanCycleAsync(true);
+                    event.getPlayer().sendMessage("§a[CiroIntel] Scan selesai! Berita baru: " + added);
+                }
+            }.runTaskAsynchronously(this);
+        } else if (msg.equals("!summary") || msg.equals("!kirim")) {
+            event.setCancelled(true);
+            event.getPlayer().sendMessage("§e[CiroIntel] Merangkum dan mengirimkan laporan ke Telegram sekarang...");
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    sendMidnightSummary(true);
+                    event.getPlayer().sendMessage("§a[CiroIntel] Laporan Early Alpha berhasil dikirim ke Telegram!");
+                }
+            }.runTaskAsynchronously(this);
+        }
     }
 
     private void loadConfiguration() {
