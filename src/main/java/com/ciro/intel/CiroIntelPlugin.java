@@ -457,16 +457,37 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
             }
 
             String resp = sb.toString();
-            // Ekstrak text dari JSON Gemini: "text": "..."
-            Pattern p = Pattern.compile("\"text\":\\s*\"(.*?)\"\\s*\\}\\s*\\]\\s*\\}\\s*\\]", Pattern.DOTALL);
-            Matcher m = p.matcher(resp);
-            if (m.find()) {
-                String rawAiText = m.group(1);
-                return rawAiText.replace("\\n", "\n")
-                        .replace("\\\"", "\"")
-                        .replace("\\\\", "\\")
-                        .replace("**", "<b>") // Konversi markdown bold ke html bold jika ada
-                        .replaceAll("<[^>]+>", ""); // Bersihkan tag aneh
+            int idx = resp.indexOf("\"text\": \"");
+            if (idx == -1) {
+                idx = resp.indexOf("\"text\":\"");
+                if (idx != -1) idx += 8;
+            } else {
+                idx += 9;
+            }
+
+            if (idx != -1) {
+                StringBuilder extracted = new StringBuilder();
+                boolean escaped = false;
+                for (int i = idx; i < resp.length(); i++) {
+                    char c = resp.charAt(i);
+                    if (escaped) {
+                        if (c == 'n') extracted.append("\n");
+                        else if (c == '"') extracted.append('"');
+                        else if (c == '\\') extracted.append('\\');
+                        else extracted.append(c);
+                        escaped = false;
+                    } else if (c == '\\') {
+                        escaped = true;
+                    } else if (c == '"') {
+                        break;
+                    } else {
+                        extracted.append(c);
+                    }
+                }
+                String textRes = extracted.toString().trim();
+                // Konversi markdown **bold** ke <b>bold</b> untuk Telegram
+                textRes = textRes.replaceAll("\\*\\*([^\\*]+)\\*\\*", "<b>$1</b>");
+                return textRes;
             }
         } catch (Exception e) {
             getLogger().warning("[Gemini AI] Error calling API: " + e.getMessage());
