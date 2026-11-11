@@ -205,13 +205,25 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
                 }
             }.runTaskAsynchronously(this);
         } else if (cmd.equals("/summary") || cmd.equals("/lapor") || cmd.equals("/kirim") || cmd.equals("summary")) {
-            sendTelegramMessage("🧠 <b>AI Luna sedang menganalisis radar berita & matriks kesehatan ekonomi dunia...</b> Mohon tunggu sebentar!");
+            sendTelegramMessage("🧠 <b>AI Luna sedang menyiapkan 3 Laporan Intelijen Lengkap untuk Tuan Ciro:</b>\n" +
+                    "1️⃣ Radar Berita 3 Sektor (IDX, Gold, BTC)\n" +
+                    "2️⃣ Matriks Pasar & Kripto Global (TradingView WebSocket)\n" +
+                    "3️⃣ Kompas The Fed & Deteksi Lonjakan Abu-Abu (Kalender Ekonomi)\n\n" +
+                    "⏳ <i>Proses analisis mendalam memakan waktu ~20-40 detik. Laporan akan dikirim beruntun...</i>");
             new BukkitRunnable() {
                 @Override
                 public void run() {
                     sendMidnightSummary(true);
-                    // Lanjut pesan kedua: Matriks Makro Global
                     sendGlobalMacroMatrix();
+                    sendFedCompassCalendar();
+                }
+            }.runTaskAsynchronously(this);
+        } else if (cmd.equals("/fed") || cmd.equals("/kalender") || cmd.equals("/kompas")) {
+            sendTelegramMessage("🧭 <b>AI Luna sedang membedah Kompas The Fed, Kalender Ekonomi & Zona Abu-Abu...</b> Mohon tunggu!");
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    sendFedCompassCalendar();
                 }
             }.runTaskAsynchronously(this);
         } else if (cmd.equals("/matriks") || cmd.equals("/makro") || cmd.equals("matriks")) {
@@ -225,8 +237,9 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
         } else if (cmd.equals("/start") || cmd.equals("/help")) {
             sendTelegramMessage("👋 <b>Selamat Datang di Ciro Market Intel Bot!</b>\n\n" +
                     "Perintah yang bisa Tuan kirim:\n" +
-                    "👉 <code>/lapor</code> - Laporan Lengkap: Radar Berita 3 Sektor + Matriks Kesehatan Ekonomi Dunia\n" +
-                    "👉 <code>/matriks</code> - Khusus Matriks Makro (DXY, Minyak, Gold, Yield, Saham Global & Status Ketakutan VIX)\n" +
+                    "👉 <code>/lapor</code> - 3 Laporan Berurutan (Berita + Matriks TV Socket + Kompas The Fed)\n" +
+                    "👉 <code>/matriks</code> - Khusus Matriks Makro & Kripto (TradingView WebSocket)\n" +
+                    "👉 <code>/fed</code> - Khusus Kompas The Fed, Kalender Ekonomi & Deteksi Lonjakan Abu-Abu\n" +
                     "👉 <code>/scan</code> - Pindai berita terbaru detik ini\n" +
                     "👉 <code>/status</code> - Cek jumlah berita yang terkumpul");
         }
@@ -388,6 +401,7 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
             lastReportedDay = currentDay;
             sendMidnightSummary(false);
             sendGlobalMacroMatrix();
+            sendFedCompassCalendar();
         }
     }
 
@@ -603,6 +617,100 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
         } catch (Exception e) {
             getLogger().warning("[MacroMatrix] Gagal: " + e.getMessage());
         }
+    }
+
+    private void sendFedCompassCalendar() {
+        try {
+            // Ambil data rilis Kalender Ekonomi High-Impact AS
+            String calendarData = fetchHighImpactEconomicEvents();
+
+            StringBuilder promptSb = new StringBuilder();
+            promptSb.append("Berikut adalah data Kalender Ekonomi High-Impact AS & Kondisi Pasar Terkini:\n\n");
+            promptSb.append(calendarData).append("\n\n");
+            promptSb.append("Tugas Anda sebagai AI Intelijen Makro & The Fed Kompas Tuan Ciro:\n");
+            promptSb.append("Buat laporan analisis mendalam:\n");
+            promptSb.append("1. NADA THE FED (Hawkish vs Dovish): Berdasarkan data inflasi (CPI/PPI) dan pasar tenaga kerja (NFP), apakah The Fed condong galak menaikkan/tahan bunga atau bersahabat pangkas bunga?\n");
+            promptSb.append("2. BAROMETER KEPASTIAN PASAR (Priced In vs Zona Abu-Abu): Apakah arah kebijakan The Fed sudah jelas diantisipasi pasar, atau The Fed sedang dalam kondisi 'ABU-ABU / GALAU' yang membingungkan pelaku pasar?\n");
+            promptSb.append("3. DETEKSI VOLATILITAS & LONJAKAN EKSTREM: Jika The Fed abu-abu, seberapa besar potensi lonjakan/spike harga mendadak? Instrumen mana yang paling rawan kena shockwave (Emas / XAUUSD, Dolar, atau Bitcoin)?\n");
+            promptSb.append("4. SKENARIO TAKTIS: Panduan antisipasi jika terjadi kejutan data (kejutan naik vs kejutan turun).\n\n");
+            promptSb.append("Di bagian paling bawah, tulis KESIMPULAN STATUS dalam format tegas:\n");
+            promptSb.append("🏛️ <b>STATUS NADA THE FED:</b> [Pilih: HAWKISH TEGAS / HAWKISH CONDONG ABU-ABU / DOVISH / ABU-ABU DILEMA TOTAL]\n");
+            promptSb.append("⚡ <b>POTENSI LONJAKAN / SPIKE:</b> [Pilih: EKSTREM TINGGI / TINGGI / MODERAT / RENDAH]\n");
+            promptSb.append("👉 <b>Catatan Taktis:</b> (1-2 kalimat vonis tajam untuk panduan trading)\n\n");
+            promptSb.append("Gunakan format teks HTML Telegram (<b>bold</b>, <i>italic</i>, <code>code</code>). DILARANG menggunakan tanda dolar ($) atau formula LaTeX. Buat tajam, lugas, dan padat.");
+
+            String aiAnalysis = callLunaAI(promptSb.toString());
+            if (aiAnalysis != null && !aiAnalysis.trim().isEmpty()) {
+                sendTelegramMessage("🏛️ <b>KOMPAS THE FED, KALENDER EKONOMI & DETEKSI LONJAKAN</b>\n" +
+                        "⏱ <i>Analisis Kebijakan Moneter & Zona Abu-Abu Pasar</i>\n" +
+                        "━━━━━━━━━━━━━━━━━━━━━━━━━\n\n" +
+                        aiAnalysis +
+                        "\n\n━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
+                        "🎯 <i>Status: Analisis The Fed Compass dihasilkan oleh AI Luna (GPT-6).</i>");
+            } else {
+                sendTelegramMessage("🏛️ <b>DATA KALENDER EKONOMI HIGH-IMPACT (RAW):</b>\n\n" + calendarData);
+            }
+        } catch (Exception e) {
+            getLogger().warning("[FedCompass] Gagal: " + e.getMessage());
+        }
+    }
+
+    private String fetchHighImpactEconomicEvents() {
+        StringBuilder sb = new StringBuilder();
+        try {
+            URL url = URI.create("https://nfs.faireconomy.media/ff_calendar_thisweek.json").toURL();
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+            conn.setConnectTimeout(8000);
+            conn.setReadTimeout(8000);
+
+            if (conn.getResponseCode() == 200) {
+                StringBuilder jsonSb = new StringBuilder();
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) jsonSb.append(line);
+                }
+
+                String json = jsonSb.toString();
+                // Parsing sederhana event JSON
+                String[] items = json.split("\\},\\{");
+                int count = 0;
+                for (String it : items) {
+                    if (it.contains("\"country\":\"USD\"") && it.contains("\"impact\":\"High\"")) {
+                        String title = extractJsonStringVal(it, "\"title\":");
+                        String date = extractJsonStringVal(it, "\"date\":");
+                        String forecast = extractJsonStringVal(it, "\"forecast\":");
+                        String previous = extractJsonStringVal(it, "\"previous\":");
+
+                        sb.append("• ").append(title).append(" (Waktu: ").append(date).append(")\n");
+                        sb.append("   Forecast: ").append(forecast.isEmpty() ? "-" : forecast)
+                                .append(" | Prev: ").append(previous.isEmpty() ? "-" : previous).append("\n");
+                        count++;
+                        if (count >= 7) break; // Maksimal 7 event terpenting
+                    }
+                }
+            }
+        } catch (Exception e) {
+            getLogger().warning("[Calendar] Gagal fetch: " + e.getMessage());
+        }
+
+        if (sb.length() == 0) {
+            sb.append("• Rilis Data Inflasi AS (Core CPI, CPI m/m) & PPI Produsen\n");
+            sb.append("• Pasar Tenaga Kerja AS (Non-Farm Payrolls / NFP & Klaim Pengangguran)\n");
+            sb.append("• Keputusan Suku Bunga FOMC The Fed & Pidato Jerome Powell\n");
+        }
+        return sb.toString();
+    }
+
+    private String extractJsonStringVal(String json, String key) {
+        int idx = json.indexOf(key);
+        if (idx == -1) return "";
+        int startQuote = json.indexOf('\"', idx + key.length());
+        if (startQuote == -1) return "";
+        int endQuote = json.indexOf('\"', startQuote + 1);
+        if (endQuote == -1) return "";
+        return json.substring(startQuote + 1, endQuote).trim();
     }
 
     private Map<String, String> fetchTradingViewQuotes(String[] symbols) {
