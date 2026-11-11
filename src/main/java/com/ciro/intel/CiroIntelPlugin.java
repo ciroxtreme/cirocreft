@@ -404,10 +404,10 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
 
         promptSb.append("\nTugas Anda sebagai AI Intelijen Pasar Tuan Ciro:\n");
         promptSb.append("Buat laporan analisis cerdas untuk 3 sektor di atas (Saham IDX, Gold, Bitcoin). Jelaskan:\n");
-        promptSb.append("1. Apa intinya & situasi saat ini\n");
+        promptSb.append("1. Inti & situasi pasar saat ini\n");
         promptSb.append("2. Prediksi masa depan / potensi pergerakan pasar\n");
         promptSb.append("3. Peringatan bahaya / resiko yang harus diwaspadai\n");
-        promptSb.append("Gunakan gaya santai, tajam, to the point. DILARANG memakai rumus LaTeX ($).");
+        promptSb.append("Gunakan format teks HTML Telegram (<b>bold</b>, <i>italic</i>, <code>code</code>). DILARANG menggunakan tanda dolar ($) atau formula LaTeX. Buat padat, tajam, dan profesional.");
 
         // Panggil AI Luna
         String aiAnalysis = callLunaAI(promptSb.toString());
@@ -418,7 +418,7 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
                     "━━━━━━━━━━━━━━━━━━━━━━━━━\n\n" +
                     aiAnalysis +
                     "\n\n━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
-                    "🎯 <i>Status: Analisis di-generate oleh AI Luna via Server Minecraft Paper.</i>");
+                    "🎯 <i>Status: Analisis cerdas dihasilkan oleh AI Luna (GPT-6) via Paper Minecraft.</i>");
         } else {
             sendTelegramFallbackSummary(topIdx, topGold, topBtc);
         }
@@ -431,14 +431,15 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
             conn.setRequestMethod("POST");
             conn.setRequestProperty("Authorization", "Bearer " + LUNA_API_KEY);
             conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
-            conn.setRequestProperty("User-Agent", "Mozilla/5.0");
+            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
             conn.setDoOutput(true);
-            conn.setConnectTimeout(15000);
-            conn.setReadTimeout(25000);
+            conn.setConnectTimeout(30000);
+            conn.setReadTimeout(60000);
 
             // Escape JSON prompt
             String safePrompt = prompt.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "");
-            String jsonPayload = "{\"model\":\"" + LUNA_MODEL + "\",\"messages\":[{\"role\":\"user\",\"content\":\"" + safePrompt + "\"}],\"max_tokens\":750}";
+            // Luna adalah model reasoning / CoT (Chain of Thought), butuh max_tokens besar (2500) agar reasoning_tokens tidak menghabiskan kuota sebelum content keluar!
+            String jsonPayload = "{\"model\":\"" + LUNA_MODEL + "\",\"messages\":[{\"role\":\"user\",\"content\":\"" + safePrompt + "\"}],\"max_tokens\":2500}";
 
             try (OutputStream os = conn.getOutputStream()) {
                 os.write(jsonPayload.getBytes(StandardCharsets.UTF_8));
@@ -447,6 +448,7 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
             int code = conn.getResponseCode();
             if (code != 200) {
                 getLogger().warning("[Luna AI] Response code: " + code);
+                sendTelegramMessage("⚠️ <i>Gagal kontak AI Luna: HTTP " + code + "</i>");
                 return null;
             }
 
@@ -459,7 +461,7 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
             }
 
             String resp = sb.toString();
-            // Ekstrak nilai string di dalam "content": "..."
+            // Robust parsing untuk "content"
             int idx = resp.indexOf("\"content\": \"");
             if (idx == -1) {
                 idx = resp.indexOf("\"content\":\"");
@@ -477,6 +479,7 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
                         if (c == 'n') extracted.append("\n");
                         else if (c == '\"') extracted.append('\"');
                         else if (c == '\\') extracted.append('\\');
+                        else if (c == 't') extracted.append('\t');
                         else extracted.append(c);
                         escaped = false;
                     } else if (c == '\\') {
@@ -488,12 +491,24 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
                     }
                 }
                 String textRes = extracted.toString().trim();
-                // Konversi markdown **bold** ke <b>bold</b> untuk Telegram
-                textRes = textRes.replaceAll("\\*\\*([^\\*]+)\\*\\*", "<b>$1</b>");
-                return textRes;
+                if (!textRes.isEmpty()) {
+                    // Konversi markdown **bold** ke <b>bold</b> untuk Telegram jika ada
+                    textRes = textRes.replaceAll("\\*\\*([^\\*]+)\\*\\*", "<b>$1</b>");
+                    textRes = textRes.replaceAll("###\\s*(.+)", "<b>$1</b>");
+                    textRes = textRes.replaceAll("##\\s*(.+)", "<b>$1</b>");
+                    textRes = textRes.replaceAll("#\\s*(.+)", "<b>$1</b>");
+                    return textRes;
+                } else {
+                    getLogger().warning("[Luna AI] Content kosong dalam respons JSON!");
+                    sendTelegramMessage("⚠️ <i>AI Luna merespons tapi isinya kosong (reasoning limit exceeded).</i>");
+                }
+            } else {
+                getLogger().warning("[Luna AI] Gagal menemukan key 'content' di respons JSON.");
+                sendTelegramMessage("⚠️ <i>Gagal membaca respons AI Luna (format JSON berbeda).</i>");
             }
         } catch (Exception e) {
             getLogger().warning("[Luna AI] Error calling API: " + e.getMessage());
+            sendTelegramMessage("⚠️ <i>Gagal menghubungi AI Luna: " + e.getMessage() + "</i>");
         }
         return null;
     }
