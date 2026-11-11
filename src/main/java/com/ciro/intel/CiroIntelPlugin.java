@@ -197,17 +197,28 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
                 }
             }.runTaskAsynchronously(this);
         } else if (cmd.equals("/summary") || cmd.equals("/lapor") || cmd.equals("/kirim") || cmd.equals("summary")) {
-            sendTelegramMessage("🧠 <b>AI Luna sedang membaca & menyusun prediksi pasar untuk Tuan Ciro...</b> Mohon tunggu sebentar!");
+            sendTelegramMessage("🧠 <b>AI Luna sedang menganalisis radar berita & matriks kesehatan ekonomi dunia...</b> Mohon tunggu sebentar!");
             new BukkitRunnable() {
                 @Override
                 public void run() {
                     sendMidnightSummary(true);
+                    // Lanjut pesan kedua: Matriks Makro Global
+                    sendGlobalMacroMatrix();
+                }
+            }.runTaskAsynchronously(this);
+        } else if (cmd.equals("/matriks") || cmd.equals("/makro") || cmd.equals("matriks")) {
+            sendTelegramMessage("🌐 <b>AI Luna sedang membedah Matriks Makro Global & Status Ketakutan Pasar...</b> Mohon tunggu!");
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    sendGlobalMacroMatrix();
                 }
             }.runTaskAsynchronously(this);
         } else if (cmd.equals("/start") || cmd.equals("/help")) {
             sendTelegramMessage("👋 <b>Selamat Datang di Ciro Market Intel Bot!</b>\n\n" +
                     "Perintah yang bisa Tuan kirim:\n" +
-                    "👉 <code>/summary</code> - Analisis, prediksi & peringatan bahaya via AI Luna\n" +
+                    "👉 <code>/lapor</code> - Laporan Lengkap: Radar Berita 3 Sektor + Matriks Kesehatan Ekonomi Dunia\n" +
+                    "👉 <code>/matriks</code> - Khusus Matriks Makro (DXY, Minyak, Gold, Yield, Saham Global & Status Ketakutan VIX)\n" +
                     "👉 <code>/scan</code> - Pindai berita terbaru detik ini\n" +
                     "👉 <code>/status</code> - Cek jumlah berita yang terkumpul");
         }
@@ -368,6 +379,7 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
         if (currentHour == summaryHourWib && currentMinute <= 5 && lastReportedDay != currentDay) {
             lastReportedDay = currentDay;
             sendMidnightSummary(false);
+            sendGlobalMacroMatrix();
         }
     }
 
@@ -522,6 +534,110 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
             sendTelegramMessage("⚠️ <i>Gagal menghubungi AI Luna: " + e.getMessage() + "</i>");
         }
         return null;
+    }
+
+    private void sendGlobalMacroMatrix() {
+        try {
+            // Fetch live matrix tickers
+            String[] tickers = new String[]{
+                    "DX-Y.NYB", "CL=F", "GC=F", "^GSPC", "^IXIC", "^N225", "^HSI", "^GDAXI", "^TNX", "^VIX"
+            };
+            String[] names = new String[]{
+                    "DXY (US Dollar Index)", "Minyak Mentah (WTI Crude)", "Emas (Gold / XAUUSD)",
+                    "S&P 500 (Wall St)", "Nasdaq 100 (Tech US)", "Nikkei 225 (Jepang)",
+                    "Hang Seng (China/HK)", "DAX (Jerman/Eropa)", "Yield US 10Y", "VIX (Wall St Fear Index)"
+            };
+
+            StringBuilder matrixData = new StringBuilder();
+            matrixData.append("[DATA INDIKATOR KESEHATAN EKONOMI DUNIA LIVE]:\n");
+            for (int i = 0; i < tickers.length; i++) {
+                String sym = tickers[i];
+                String name = names[i];
+                String stat = fetchYahooTicker(sym);
+                matrixData.append("- ").append(name).append(": ").append(stat).append("\n");
+            }
+
+            StringBuilder promptSb = new StringBuilder();
+            promptSb.append("Berikut adalah data live indikator kesehatan ekonomi dunia:\n\n");
+            promptSb.append(matrixData.toString()).append("\n");
+            promptSb.append("Tugas Anda sebagai AI Intelijen Pasar Tuan Ciro:\n");
+            promptSb.append("Buat analisis Matriks Makro & Kesehatan Ekonomi Dunia:\n");
+            promptSb.append("1. Hubungkan pergerakan DXY, Yield US 10Y, Minyak, Emas, dan Bursa Saham Dunia (AS, Asia, Eropa). Jelaskan apa yang sedang terjadi di peta modal global (aliran likuiditas).\n");
+            promptSb.append("2. Status Ketakutan Pasar: Analisa level VIX dan sentimen Risk-On vs Risk-Off.\n");
+            promptSb.append("3. Di bagian paling bawah, tulis KESIMPULAN STATUS DUNIA dalam format tegas:\n");
+            promptSb.append("🌐 <b>STATUS KESEHATAN EKONOMI DUNIA:</b> [Pilih salah satu misal: RISK-OFF WASPADA / RISK-ON MODERAT / STAGFLASI GEOPOLITIK / PANIK / KONSOLIDASI]\n");
+            promptSb.append("👉 <b>Catatan Kunci:</b> (1-2 kalimat vonis kesehatan ekonomi global)\n\n");
+            promptSb.append("Gunakan format teks HTML Telegram (<b>bold</b>, <i>italic</i>, <code>code</code>). DILARANG menggunakan tanda dolar ($) atau formula LaTeX. Buat tajam, lugas, dan padat.");
+
+            String aiAnalysis = callLunaAI(promptSb.toString());
+            if (aiAnalysis != null && !aiAnalysis.trim().isEmpty()) {
+                sendTelegramMessage("🌐 <b>MATRIKS MAKRO & BAROMETER KESEHATAN DUNIA</b>\n" +
+                        "⏱ <i>Pantauan Real-Time Pasar Global</i>\n" +
+                        "━━━━━━━━━━━━━━━━━━━━━━━━━\n\n" +
+                        aiAnalysis +
+                        "\n\n━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
+                        "🎯 <i>Status: Analisis Matriks Makro dihasilkan oleh AI Luna (GPT-6).</i>");
+            } else {
+                sendTelegramMessage("🌐 <b>MATRIKS PASAR GLOBAL (RAW):</b>\n\n" + matrixData.toString());
+            }
+        } catch (Exception e) {
+            getLogger().warning("[MacroMatrix] Gagal: " + e.getMessage());
+        }
+    }
+
+    private String fetchYahooTicker(String symbol) {
+        try {
+            String urlStr = "https://query1.finance.yahoo.com/v8/finance/chart/" + URLEncoder.encode(symbol, StandardCharsets.UTF_8.name()) + "?interval=1d&range=1d";
+            URL url = URI.create(urlStr).toURL();
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+            conn.setConnectTimeout(6000);
+            conn.setReadTimeout(6000);
+
+            if (conn.getResponseCode() != 200) {
+                return "N/A";
+            }
+
+            StringBuilder sb = new StringBuilder();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    sb.append(line);
+                }
+            }
+
+            String resp = sb.toString();
+            // Ekstrak regularMarketPrice & previousClose sederhana
+            double price = extractJsonDouble(resp, "\"regularMarketPrice\":");
+            double prev = extractJsonDouble(resp, "\"chartPreviousClose\":");
+            if (prev == 0) prev = extractJsonDouble(resp, "\"previousClose\":");
+
+            if (price > 0) {
+                if (prev > 0) {
+                    double pct = (price - prev) / prev * 100.0;
+                    return String.format(Locale.US, "%.2f (%+.2f%%)", price, pct);
+                } else {
+                    return String.format(Locale.US, "%.2f", price);
+                }
+            }
+        } catch (Exception ignored) {}
+        return "N/A";
+    }
+
+    private double extractJsonDouble(String json, String key) {
+        int idx = json.indexOf(key);
+        if (idx == -1) return 0.0;
+        int start = idx + key.length();
+        int end = start;
+        while (end < json.length() && (Character.isDigit(json.charAt(end)) || json.charAt(end) == '.' || json.charAt(end) == '-')) {
+            end++;
+        }
+        try {
+            return Double.parseDouble(json.substring(start, end).trim());
+        } catch (Exception e) {
+            return 0.0;
+        }
     }
 
     private void sendTelegramFallbackSummary(List<NewsItem> topIdx, List<NewsItem> topGold, List<NewsItem> topBtc) {
