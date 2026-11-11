@@ -37,6 +37,7 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
 
     private String botToken;
     private String chatId;
+    private String geminiApiKey;
     private int scanIntervalMinutes;
     private int summaryHourWib;
 
@@ -44,7 +45,6 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
     private final AtomicBoolean isScanning = new AtomicBoolean(false);
     private int lastReportedDay = -1;
 
-    // Telegram polling offset
     private long telegramOffset = 0;
     private boolean isPollingRunning = true;
 
@@ -74,20 +74,20 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
             getCommand("cirointel").setExecutor(this);
         }
 
-        getLogger().info("[CiroIntel] Plugin Intel Pasar Aktif! Telegram Bot Polling Berjalan.");
+        getLogger().info("[CiroIntel] Plugin Intel Pasar AI Aktif! Polling Telegram berjalan.");
 
-        // Salam pembuka via Telegram
         new BukkitRunnable() {
             @Override
             public void run() {
-                sendTelegramMessage("🛰️ <b>Ciro Market Intel Sentinel Aktif!</b>\n" +
+                sendTelegramMessage("🛰️ <b>Ciro Market Intel Sentinel (Powered by Gemini AI) Aktif!</b>\n" +
                         "• Hosting: Server Minecraft (Paper)\n" +
+                        "• Otak Analisis: Google Gemini AI\n" +
                         "• Mode: 24 Jam Silent Scraper (IDX, Gold, BTC)\n" +
                         "• Waktu Laporan: Setiap Jam 00:00 WIB\n\n" +
-                        "💬 <b>Perintah Chat Telegram (@Dicopi_bot):</b>\n" +
-                        "👉 <code>/summary</code> atau <code>/lapor</code> - Rangkum & kirim laporan sekarang\n" +
-                        "👉 <code>/scan</code> - Pindai berita baru sekarang\n" +
-                        "👉 <code>/status</code> - Cek total berita tersimpan");
+                        "💬 <b>Perintah Telegram (@Dicopi_bot):</b>\n" +
+                        "👉 <code>/summary</code> atau <code>/lapor</code> - Rangkum berita dengan Gemini AI sekarang\n" +
+                        "👉 <code>/scan</code> - Pindai berita baru detik ini\n" +
+                        "👉 <code>/status</code> - Cek total pool berita");
             }
         }.runTaskAsynchronously(this);
 
@@ -100,7 +100,7 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
             }
         }.runTaskTimerAsynchronously(this, 100L, periodTicks);
 
-        // Watcher jam 00:00 WIB (Pengecekan tiap 60 detik)
+        // Watcher jam 00:00 WIB
         new BukkitRunnable() {
             @Override
             public void run() {
@@ -122,18 +122,18 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
     @Override
     public void onDisable() {
         isPollingRunning = false;
-        getLogger().info("[CiroIntel] Plugin Intel dinonaktifkan.");
+        getLogger().info("[CiroIntel] Plugin dinonaktifkan.");
     }
 
     private void loadConfiguration() {
         reloadConfig();
         this.botToken = getConfig().getString("telegram.bot_token", "8899978543:AAHlrCjXZbiJwcI_OZIzXrGdpKC5_BCGCEs");
         this.chatId = getConfig().getString("telegram.chat_id", "1936436999");
+        this.geminiApiKey = getConfig().getString("gemini.api_key", "AQ.Ab8RN6IGmE4HBYVeMwB3Eegv5wxJMD2eYt7vip0tuYhIZ3d5jw");
         this.scanIntervalMinutes = getConfig().getInt("crawler.scan_interval_minutes", 15);
         this.summaryHourWib = getConfig().getInt("crawler.daily_summary_hour_wib", 0);
     }
 
-    // ================= POLLING TELEGRAM =================
     private void pollTelegramUpdates() {
         try {
             String urlStr = "https://api.telegram.org/bot" + botToken + "/getUpdates?timeout=2&offset=" + telegramOffset;
@@ -154,7 +154,6 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
             }
 
             String resp = sb.toString();
-            // Parsing regex update Telegram sederhana & cepat tanpa dependensi JSON eksternal
             Pattern pUpdate = Pattern.compile("\\{\"update_id\":(\\d+).*?\"chat\":\\{\"id\":(\\d+).*?\"text\":\"([^\"]+)\"");
             Matcher m = pUpdate.matcher(resp);
 
@@ -180,10 +179,11 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
         if (cmd.equals("/status") || cmd.equals("/cek") || cmd.equals("status")) {
             sendTelegramMessage("📊 <b>Status Radar CiroIntel:</b>\n" +
                     "• Mode: 24 Jam Aktif di Server Minecraft\n" +
+                    "• AI Engine: Google Gemini Flash\n" +
                     "• Total Berita Tersimpan: <b>" + newsDatabase.size() + " item</b>\n" +
                     "• Interval Scan: Tiap " + scanIntervalMinutes + " menit\n" +
                     "• Jadwal Laporan: Pukul 00:00 WIB\n\n" +
-                    "💡 Ketik <code>/summary</code> untuk minta laporan sekarang!");
+                    "💡 Ketik <code>/summary</code> untuk minta analisis Gemini AI sekarang!");
         } else if (cmd.equals("/scan") || cmd.equals("scan")) {
             sendTelegramMessage("🔍 <b>Memulai pemindaian berita multi-sumber sekarang...</b>");
             new BukkitRunnable() {
@@ -194,7 +194,7 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
                 }
             }.runTaskAsynchronously(this);
         } else if (cmd.equals("/summary") || cmd.equals("/lapor") || cmd.equals("/kirim") || cmd.equals("summary")) {
-            sendTelegramMessage("⚡ <b>Menyusun rangkuman Early Alpha dari seluruh berita hari ini...</b>");
+            sendTelegramMessage("🧠 <b>Gemini AI sedang membaca & menyaring berita paling berpotensi gerak (Alpha)...</b> Mohon tunggu beberapa detik!");
             new BukkitRunnable() {
                 @Override
                 public void run() {
@@ -204,7 +204,7 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
         } else if (cmd.equals("/start") || cmd.equals("/help")) {
             sendTelegramMessage("👋 <b>Selamat Datang di Ciro Market Intel Bot!</b>\n\n" +
                     "Perintah yang bisa Tuan kirim:\n" +
-                    "👉 <code>/summary</code> - Buat dan kirim rangkuman sekarang\n" +
+                    "👉 <code>/summary</code> - Analisis & rangkum berita dengan Gemini AI sekarang\n" +
                     "👉 <code>/scan</code> - Pindai berita terbaru detik ini\n" +
                     "👉 <code>/status</code> - Cek jumlah berita yang terkumpul");
         }
@@ -228,7 +228,7 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
             }.runTaskAsynchronously(this);
         } else if (msg.equals("!summary") || msg.equals("!kirim")) {
             event.setCancelled(true);
-            event.getPlayer().sendMessage("§e[CiroIntel] Merangkum dan mengirimkan laporan ke Telegram sekarang...");
+            event.getPlayer().sendMessage("§e[CiroIntel] Merangkum berita dengan Gemini AI...");
             new BukkitRunnable() {
                 @Override
                 public void run() {
@@ -242,24 +242,22 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0 || args[0].equalsIgnoreCase("status")) {
-            sender.sendMessage("§b[CiroIntel] §fStatus: Aktif | Berita Tersimpan: §e" + newsDatabase.size() + " item");
+            sender.sendMessage("§b[CiroIntel] §fStatus: Aktif | Berita: §e" + newsDatabase.size());
             return true;
         }
-
         if (args[0].equalsIgnoreCase("scan")) {
-            sender.sendMessage("§a[CiroIntel] Memulai pemindaian berita manual...");
+            sender.sendMessage("§a[CiroIntel] Scanning...");
             new BukkitRunnable() {
                 @Override
                 public void run() {
                     int added = runScanCycleAsync(true);
-                    sender.sendMessage("§a[CiroIntel] Selesai! Berita baru ditemukan: " + added);
+                    sender.sendMessage("§a[CiroIntel] Baru: " + added);
                 }
             }.runTaskAsynchronously(this);
             return true;
         }
-
         if (args[0].equalsIgnoreCase("summary")) {
-            sender.sendMessage("§e[CiroIntel] Menghasilkan dan mengirimkan rangkuman sekarang...");
+            sender.sendMessage("§e[CiroIntel] Merangkum via Gemini...");
             new BukkitRunnable() {
                 @Override
                 public void run() {
@@ -268,8 +266,6 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
             }.runTaskAsynchronously(this);
             return true;
         }
-
-        sender.sendMessage("§cPenggunaan: /cirointel <status|scan|summary>");
         return true;
     }
 
@@ -300,7 +296,7 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
             long cutoff = System.currentTimeMillis() - (28L * 3600L * 1000L);
             newsDatabase.entrySet().removeIf(e -> e.getValue().timestamp < cutoff);
 
-            getLogger().info("[CiroIntel] Siklus Scan selesai. Berita baru: " + totalNew + " | Total Pool: " + newsDatabase.size());
+            getLogger().info("[CiroIntel] Scan selesai. Berita baru: " + totalNew + " | Total: " + newsDatabase.size());
         } catch (Exception e) {
             getLogger().log(Level.WARNING, "[CiroIntel] Gagal scan: " + e.getMessage());
         } finally {
@@ -391,24 +387,104 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
         List<NewsItem> topGold = filterHighImpact(goldList, Arrays.asList("fed", "rate", "yield", "inflation", "cpi", "war", "middle east", "central bank", "china", "pboc", "gold"));
         List<NewsItem> topBtc = filterHighImpact(btcList, Arrays.asList("whale", "etf", "sec", "inflow", "outflow", "blackrock", "binance", "coinbase", "reserve", "all-time", "trump"));
 
+        // Format daftar berita mentah untuk dikirim ke Gemini AI
+        StringBuilder promptSb = new StringBuilder();
+        promptSb.append("Berikut adalah daftar berita keuangan dan pasar 24 jam terakhir yang dikumpulkan radar:\n\n");
+
+        promptSb.append("[SEKTOR SAHAM IDX]:\n");
+        for (NewsItem n : topIdx) promptSb.append("- ").append(n.title).append(" (Sumber: ").append(n.source).append(")\n");
+
+        promptSb.append("\n[SEKTOR GOLD / XAUUSD & MAKRO]:\n");
+        for (NewsItem n : topGold) promptSb.append("- ").append(n.title).append(" (Sumber: ").append(n.source).append(")\n");
+
+        promptSb.append("\n[SEKTOR BITCOIN & CRYPTO]:\n");
+        for (NewsItem n : topBtc) promptSb.append("- ").append(n.title).append(" (Sumber: ").append(n.source).append(")\n");
+
+        promptSb.append("\nInstruksi untuk Anda:\n");
+        promptSb.append("Anda adalah Intelijen Pasar pribadi Tuan Ciro. Dari daftar berita di atas, saring dan buatkan laporan 'Early Alpha' (isu sebelum viral) yang punya potensi menggerakkan harga pasar besok.\n");
+        promptSb.append("Format Laporan:\n");
+        promptSb.append("Gunakan HTML Telegram (b, i, code). Dilarang keras memakai sintaks LaTeX ($).\n");
+        promptSb.append("Bahas 3 sektor (Saham IDX, Gold, BTC) dengan bahasa santai, tajam, profesional khas trader cerdas, tanpa basa-basi.\n");
+        promptSb.append("Jelaskan: Apa Isunya, Kenapa Penting, dan Potensi Pergerakannya.");
+
+        // Panggil Google Gemini AI
+        String aiAnalysis = callGeminiAI(promptSb.toString());
+
+        if (aiAnalysis != null && !aiAnalysis.trim().isEmpty()) {
+            sendTelegramMessage("📡 <b>RADAR INTELIJEN PASAR — EARLY ALPHA (ANALISIS GEMINI AI)</b>\n" +
+                    "⏱ <i>Periode Pantauan: 24 Jam Terakhir</i>\n" +
+                    "━━━━━━━━━━━━━━━━━━━━━━━━━\n\n" +
+                    aiAnalysis +
+                    "\n\n━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
+                    "🎯 <i>Status: Analisis di-generate oleh Google Gemini AI via Server Minecraft Paper.</i>");
+        } else {
+            // Fallback jika API AI lambat
+            sendTelegramFallbackSummary(topIdx, topGold, topBtc);
+        }
+    }
+
+    private String callGeminiAI(String prompt) {
+        try {
+            String urlStr = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=" + geminiApiKey;
+            URL url = URI.create(urlStr).toURL();
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+            conn.setDoOutput(true);
+            conn.setConnectTimeout(15000);
+            conn.setReadTimeout(20000);
+
+            // Escape JSON manual sederhana
+            String safePrompt = prompt.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "");
+            String jsonPayload = "{\"contents\":[{\"parts\":[{\"text\":\"" + safePrompt + "\"}]}]}";
+
+            try (OutputStream os = conn.getOutputStream()) {
+                os.write(jsonPayload.getBytes(StandardCharsets.UTF_8));
+            }
+
+            int code = conn.getResponseCode();
+            if (code != 200) {
+                getLogger().warning("[Gemini AI] Response code: " + code);
+                return null;
+            }
+
+            StringBuilder sb = new StringBuilder();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    sb.append(line);
+                }
+            }
+
+            String resp = sb.toString();
+            // Ekstrak text dari JSON Gemini: "text": "..."
+            Pattern p = Pattern.compile("\"text\":\\s*\"(.*?)\"\\s*\\}\\s*\\]\\s*\\}\\s*\\]", Pattern.DOTALL);
+            Matcher m = p.matcher(resp);
+            if (m.find()) {
+                String rawAiText = m.group(1);
+                return rawAiText.replace("\\n", "\n")
+                        .replace("\\\"", "\"")
+                        .replace("\\\\", "\\")
+                        .replace("**", "<b>") // Konversi markdown bold ke html bold jika ada
+                        .replaceAll("<[^>]+>", ""); // Bersihkan tag aneh
+            }
+        } catch (Exception e) {
+            getLogger().warning("[Gemini AI] Error calling API: " + e.getMessage());
+        }
+        return null;
+    }
+
+    private void sendTelegramFallbackSummary(List<NewsItem> topIdx, List<NewsItem> topGold, List<NewsItem> topBtc) {
         StringBuilder sb = new StringBuilder();
         sb.append("📡 <b>RADAR INTELIJEN PASAR — EARLY ALPHA</b>\n");
-        sb.append("⏱ <i>Periode Pantauan 24 Jam | Tepat Jam 00:00 WIB</i>\n");
         sb.append("━━━━━━━━━━━━━━━━━━━━━━━━━\n");
-        sb.append("💡 <i>Total Terpantau: ").append(newsDatabase.size()).append(" berita | Disaring otomatis anti-hoaks & anti-duplikat.</i>\n\n");
-
         sb.append("🇮🇩 <b>1. SAHAM IDX & AKSI KORPORASI:</b>\n");
-        formatSection(sb, topIdx, "Belum ada isu keterbukaan signifikan malam ini.");
-
-        sb.append("\n🟡 <b>2. GOLD / XAUUSD & MAKRO GLOBAL:</b>\n");
-        formatSection(sb, topGold, "Sentimen emas stabil, belum ada anomali yield atau geopolitik ekstrem.");
-
-        sb.append("\n🟠 <b>3. BITCOIN & ON-CHAIN WHALE:</b>\n");
-        formatSection(sb, topBtc, "Arus koin bursa normal, belum ada transfer paus besar.");
-
+        formatSection(sb, topIdx, "Belum ada isu signifikan.");
+        sb.append("\n🟡 <b>2. GOLD & MAKRO:</b>\n");
+        formatSection(sb, topGold, "Sentimen emas stabil.");
+        sb.append("\n🟠 <b>3. BITCOIN & WHALE:</b>\n");
+        formatSection(sb, topBtc, "Arus koin normal.");
         sb.append("\n━━━━━━━━━━━━━━━━━━━━━━━━━\n");
-        sb.append("🎯 <i>Status: Laporan terkirim via server Minecraft Paper. Selamat beristirahat Tuan Ciro!</i>");
-
         sendTelegramMessage(sb.toString());
     }
 
@@ -433,7 +509,7 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
         result.addAll(prioritized);
         result.addAll(regular);
 
-        return result.subList(0, Math.min(result.size(), 3));
+        return result.subList(0, Math.min(result.size(), 4));
     }
 
     private void formatSection(StringBuilder sb, List<NewsItem> list, String emptyFallback) {
