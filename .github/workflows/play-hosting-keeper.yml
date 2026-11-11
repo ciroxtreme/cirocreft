@@ -2,12 +2,12 @@ name: Ciro Dual Minecraft 24/7 Keeper (Azure Cloud IP)
 
 on:
   schedule:
-    - cron: '*/20 * * * *'
+    - cron: '*/15 * * * *'
   workflow_dispatch:
 
 permissions:
   actions: write
-  contents: read
+  contents: write
 
 concurrency:
   group: ciro-minecraft-keeper
