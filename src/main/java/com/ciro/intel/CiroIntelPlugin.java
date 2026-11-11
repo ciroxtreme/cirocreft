@@ -425,7 +425,7 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
 
     private String callGeminiAI(String prompt) {
         try {
-            String urlStr = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=" + geminiApiKey;
+            String urlStr = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=" + geminiApiKey;
             URL url = URI.create(urlStr).toURL();
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
