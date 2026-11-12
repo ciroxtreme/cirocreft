@@ -594,8 +594,8 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
             conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
-            conn.setConnectTimeout(65000);
-            conn.setReadTimeout(65000);
+            conn.setConnectTimeout(30000);
+            conn.setReadTimeout(120000);
 
             if (conn.getResponseCode() == 200) {
                 StringBuilder sb = new StringBuilder();
