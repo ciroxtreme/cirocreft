@@ -453,11 +453,24 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
         for (NewsItem n : topBtc) promptSb.append("- ").append(n.title).append("\n");
 
         promptSb.append("\nTugas Anda sebagai AI Intelijen Pasar Tuan Ciro:\n");
-        promptSb.append("Buat laporan analisis cerdas untuk 3 sektor di atas (Saham IDX, Gold, Bitcoin). Jelaskan:\n");
-        promptSb.append("1. Inti & situasi pasar saat ini\n");
-        promptSb.append("2. Prediksi masa depan / potensi pergerakan pasar\n");
-        promptSb.append("3. Peringatan bahaya / resiko yang harus diwaspadai\n");
-        promptSb.append("Gunakan format teks HTML Telegram (<b>bold</b>, <i>italic</i>, <code>code</code>). DILARANG menggunakan tanda dolar ($) atau formula LaTeX. Buat padat, tajam, dan profesional.");
+        promptSb.append("Buat laporan analisis cerdas untuk 3 sektor di atas (Saham IDX, Gold, Bitcoin) dengan gaya POIN TAKTIS, RINGKAS, dan MUDAH DIPAHAMI ORANG AWAM (DILARANG paragraf panjang bertele-tele).\n\n");
+        promptSb.append("WAJIB gunakan struktur persis seperti template berikut:\n\n");
+        promptSb.append("🇮🇩 <b>1. SAHAM IDX</b>\n");
+        promptSb.append("• <b>Katalis Kunci:</b> (Sebutkan aksi korporasi/emiten penting, ringkas 1 kalimat)\n");
+        promptSb.append("• <b>Arah & Dampak:</b> (Potensi pergerakan harga/minat investor, 1 kalimat)\n");
+        promptSb.append("• <b>Rambu Bahaya:</b> (Peringatan risiko/jebakan fomo/ex-date yang harus dihindari, 1 kalimat)\n\n");
+        promptSb.append("🟡 <b>2. EMAS (XAUUSD)</b>\n");
+        promptSb.append("• <b>Katalis Kunci:</b> (Posisi harga/area kunci & faktor sentimen/suku bunga/data AS, 1 kalimat)\n");
+        promptSb.append("• <b>Arah & Dampak:</b> (Skenario jika data bagus/buruk terhadap emas, 1 kalimat)\n");
+        promptSb.append("• <b>Rambu Bahaya:</b> (Level psikologis bahaya/lonjakan volatilitas rilis data, 1 kalimat)\n\n");
+        promptSb.append("🪙 <b>3. BITCOIN & KRIPTO</b>\n");
+        promptSb.append("• <b>Katalis Kunci:</b> (Arus ETF spot/inflow/outflow & sentimen whale/ekosistem, 1 kalimat)\n");
+        promptSb.append("• <b>Arah & Dampak:</b> (Arah dominasi tekanan jual/beli jangka pendek, 1 kalimat)\n");
+        promptSb.append("• <b>Rambu Bahaya:</b> (Risiko banting harga/whipsaw/level rawan, 1 kalimat)\n\n");
+        promptSb.append("ATURAN FORMAT:\n");
+        promptSb.append("- Gunakan format teks HTML Telegram (<b>bold</b>, <i>italic</i>, <code>code</code>).\n");
+        promptSb.append("- DILARANG KERAS menggunakan simbol dolar ($) atau formula LaTeX (seperti $BIKE atau $100, gunakan BIKE atau USD 100).\n");
+        promptSb.append("- Tulis dengan bahasa santai, lugas, tajam, dan tidak kaku.");
 
         // Panggil AI Luna
         String aiAnalysis = callLunaAI(promptSb.toString());
