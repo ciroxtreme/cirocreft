@@ -778,8 +778,8 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
             promptSb.append("🎯 <b>Dampak ke Aset (Emas & Bitcoin):</b>\n");
             promptSb.append("• Emas (XAUUSD): (Potensi arah & level bahaya)\n");
             promptSb.append("• Bitcoin: (Efek likuiditas dolar)\n\n");
-            promptSb.append("⏰ <b>Jadwal Bahaya Terdekat:</b>\n");
-            promptSb.append("• (Sebutkan rilis data mendatang terpenting seperti Claims & Core PPI beserta potensinya)\n\n");
+            promptSb.append("⏰ <b>Jadwal Bahaya & Hasil Rilis Ekonomi Terkini:</b>\n");
+            promptSb.append("• (Tinjau hasil AKTUAL data yang baru rilis jika ada seperti Initial Jobless Claims / CPI, bandingkan Angka Aktual vs Forecast vs Previous, dan sebutkan data rilis mendatang terdekat seperti Core PPI serta dampaknya)\n\n");
             promptSb.append("Di bagian paling bawah, tulis KESIMPULAN STATUS tegas:\n");
             promptSb.append("🏛️ <b>STATUS NADA THE FED:</b> [Pilih: HAWKISH TEGAS / HAWKISH CONDONG ABU-ABU / DOVISH / ABU-ABU DILEMA TOTAL]\n");
             promptSb.append("⚡ <b>POTENSI LONJAKAN / SPIKE:</b> [Pilih: EKSTREM TINGGI / TINGGI / MODERAT / RENDAH]\n");
@@ -807,11 +807,22 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
 
     private String fetchHighImpactEconomicEvents() {
         StringBuilder sb = new StringBuilder();
+
+        // 1. Prioritas Utama: TradingView Economic Calendar API (Dilengkapi Angka Actual Rilis)
         try {
-            URL url = URI.create("https://nfs.faireconomy.media/ff_calendar_thisweek.json").toURL();
+            ZonedDateTime nowUtc = ZonedDateTime.now(ZoneId.of("UTC"));
+            String startStr = nowUtc.minusDays(2).format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T00:00:00.000Z'"));
+            String endStr = nowUtc.plusDays(6).format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T23:59:59.000Z'"));
+
+            String tvUrl = "https://economic-calendar.tradingview.com/events?from=" + URLEncoder.encode(startStr, StandardCharsets.UTF_8)
+                    + "&to=" + URLEncoder.encode(endStr, StandardCharsets.UTF_8) + "&countries=US";
+
+            URL url = URI.create(tvUrl).toURL();
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
-            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
+            conn.setRequestProperty("Origin", "https://www.tradingview.com");
+            conn.setRequestProperty("Referer", "https://www.tradingview.com/");
             conn.setConnectTimeout(8000);
             conn.setReadTimeout(8000);
 
@@ -822,44 +833,128 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
                     while ((line = reader.readLine()) != null) jsonSb.append(line);
                 }
 
-                String json = jsonSb.toString();
-                // Parsing sederhana event JSON
-                String[] items = json.split("\\},\\{");
-                int count = 0;
-                long nowMs = System.currentTimeMillis();
+                String rawJson = jsonSb.toString();
+                String[] items = rawJson.split("\\},\\{");
+
+                List<String> releasedList = new ArrayList<>();
+                List<String> upcomingList = new ArrayList<>();
 
                 for (String it : items) {
-                    if (it.contains("\"country\":\"USD\"")) {
-                        boolean isHigh = it.contains("\"impact\":\"High\"");
-                        boolean isClaims = it.contains("Unemployment Claims");
+                    String title = extractJsonStringVal(it, "\"title\":");
+                    if (title.isEmpty()) continue;
+                    String titleLow = title.toLowerCase(Locale.ROOT);
 
-                        if (isHigh || isClaims) {
-                            String title = extractJsonStringVal(it, "\"title\":");
-                            String dateStr = extractJsonStringVal(it, "\"date\":");
-                            String forecast = extractJsonStringVal(it, "\"forecast\":");
-                            String previous = extractJsonStringVal(it, "\"previous\":");
+                    String impStr = extractJsonRawVal(it, "\"importance\":");
+                    boolean isHigh = "1".equals(impStr);
+                    boolean isKeyIndicator = isHigh || titleLow.contains("jobless") || titleLow.contains("claims")
+                            || titleLow.contains("cpi") || titleLow.contains("ppi") || titleLow.contains("retail sales")
+                            || titleLow.contains("payrolls") || titleLow.contains("unemployment");
 
-                            // Cek apakah jadwal rilis sudah lewat atau mendatang
-                            String statusWaktu = "[JADWAL MENDATANG]";
-                            try {
-                                ZonedDateTime eventDt = ZonedDateTime.parse(dateStr);
-                                if (eventDt.toInstant().toEpochMilli() < nowMs) {
-                                    statusWaktu = "[SUDAH LEWAT]";
-                                }
-                            } catch (Exception ignored) {}
+                    if (!isKeyIndicator) continue;
 
-                            sb.append("• ").append(statusWaktu).append(" ").append(title)
-                                    .append(" (Waktu: ").append(dateStr).append(")\n");
-                            sb.append("   Forecast: ").append(forecast.isEmpty() ? "-" : forecast)
-                                    .append(" | Prev: ").append(previous.isEmpty() ? "-" : previous).append("\n");
-                            count++;
-                            if (count >= 8) break; // Maksimal 8 event terpenting
-                        }
+                    // Lewati event yang kurang relevan
+                    if (titleLow.contains("auction") || titleLow.contains("gas rig") || titleLow.contains("poultry")
+                            || titleLow.contains("pork") || titleLow.contains("bill") || titleLow.contains("note")
+                            || titleLow.contains("weekly")) {
+                        continue;
                     }
+
+                    String scale = extractJsonStringVal(it, "\"scale\":");
+                    String actual = extractJsonRawVal(it, "\"actual\":");
+                    if (!actual.isEmpty()) actual += scale;
+
+                    String forecast = extractJsonRawVal(it, "\"forecast\":");
+                    if (!forecast.isEmpty()) forecast += scale;
+
+                    String previous = extractJsonRawVal(it, "\"previous\":");
+                    if (!previous.isEmpty()) previous += scale;
+
+                    String dateStr = extractJsonStringVal(it, "\"date\":");
+
+                    StringBuilder itemSb = new StringBuilder();
+                    if (!actual.isEmpty()) {
+                        itemSb.append("• [HASIL AKTUAL SUDAH RILIS] ").append(title).append(" (Waktu: ").append(dateStr).append(")\n");
+                        itemSb.append("   Actual: ").append(actual)
+                                .append(" | Forecast: ").append(forecast.isEmpty() ? "-" : forecast)
+                                .append(" | Prev: ").append(previous.isEmpty() ? "-" : previous).append("\n");
+                        releasedList.add(itemSb.toString());
+                    } else {
+                        itemSb.append("• [JADWAL MENDATANG] ").append(title).append(" (Waktu: ").append(dateStr).append(")\n");
+                        itemSb.append("   Actual: (Belum Rilis)")
+                                .append(" | Forecast: ").append(forecast.isEmpty() ? "-" : forecast)
+                                .append(" | Prev: ").append(previous.isEmpty() ? "-" : previous).append("\n");
+                        upcomingList.add(itemSb.toString());
+                    }
+                }
+
+                // Ambil hingga 4 event rilis terbaru dan 4 event rilis mendatang
+                int relStart = Math.max(0, releasedList.size() - 4);
+                for (int i = relStart; i < releasedList.size(); i++) {
+                    sb.append(releasedList.get(i));
+                }
+                int upLimit = Math.min(upcomingList.size(), 4);
+                for (int i = 0; i < upLimit; i++) {
+                    sb.append(upcomingList.get(i));
                 }
             }
         } catch (Exception e) {
-            getLogger().warning("[Calendar] Gagal fetch: " + e.getMessage());
+            getLogger().warning("[TradingView Calendar] Gagal: " + e.getMessage());
+        }
+
+        // 2. Fallback Cadangan: ForexFactory JSON
+        if (sb.length() == 0) {
+            try {
+                URL url = URI.create("https://nfs.faireconomy.media/ff_calendar_thisweek.json").toURL();
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+                conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+                conn.setConnectTimeout(8000);
+                conn.setReadTimeout(8000);
+
+                if (conn.getResponseCode() == 200) {
+                    StringBuilder jsonSb = new StringBuilder();
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
+                        String line;
+                        while ((line = reader.readLine()) != null) jsonSb.append(line);
+                    }
+
+                    String json = jsonSb.toString();
+                    String[] items = json.split("\\},\\{");
+                    int count = 0;
+                    long nowMs = System.currentTimeMillis();
+
+                    for (String it : items) {
+                        if (it.contains("\"country\":\"USD\"")) {
+                            boolean isHigh = it.contains("\"impact\":\"High\"");
+                            boolean isClaims = it.contains("Unemployment Claims");
+
+                            if (isHigh || isClaims) {
+                                String title = extractJsonStringVal(it, "\"title\":");
+                                String dateStr = extractJsonStringVal(it, "\"date\":");
+                                String forecast = extractJsonStringVal(it, "\"forecast\":");
+                                String previous = extractJsonStringVal(it, "\"previous\":");
+
+                                String statusWaktu = "[JADWAL MENDATANG]";
+                                try {
+                                    ZonedDateTime eventDt = ZonedDateTime.parse(dateStr);
+                                    if (eventDt.toInstant().toEpochMilli() < nowMs) {
+                                        statusWaktu = "[SUDAH LEWAT]";
+                                    }
+                                } catch (Exception ignored) {}
+
+                                sb.append("• ").append(statusWaktu).append(" ").append(title)
+                                        .append(" (Waktu: ").append(dateStr).append(")\n");
+                                sb.append("   Forecast: ").append(forecast.isEmpty() ? "-" : forecast)
+                                        .append(" | Prev: ").append(previous.isEmpty() ? "-" : previous).append("\n");
+                                count++;
+                                if (count >= 8) break;
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                getLogger().warning("[ForexFactory Fallback] Gagal: " + e.getMessage());
+            }
         }
 
         if (sb.length() == 0) {
@@ -868,6 +963,19 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
             sb.append("• [SUDAH LEWAT] Core CPI & CPI m/m (Inflasi Konsumen AS)\n");
         }
         return sb.toString();
+    }
+
+    private String extractJsonRawVal(String json, String key) {
+        int idx = json.indexOf(key);
+        if (idx == -1) return "";
+        int start = idx + key.length();
+        while (start < json.length() && json.charAt(start) == ' ') start++;
+        if (start + 4 <= json.length() && json.substring(start, start + 4).equals("null")) return "";
+        int end = start;
+        while (end < json.length() && (Character.isDigit(json.charAt(end)) || json.charAt(end) == '.' || json.charAt(end) == '-')) {
+            end++;
+        }
+        return json.substring(start, end).trim();
     }
 
     private String extractJsonStringVal(String json, String key) {
