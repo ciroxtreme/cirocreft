@@ -694,11 +694,14 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
             promptSb.append("Buat analisis Matriks Makro, Kripto & Kesehatan Ekonomi Dunia secara tajam dan ringkas:\n");
             promptSb.append("1. Peta Likuiditas Makro: Hubungkan DXY, Yield US 10Y, Minyak, Emas, dan Bursa Saham AS/Asia/Eropa.\n");
             promptSb.append("2. Peta Pasar Kripto: Analisa BTC, BTC Dominance (BTC.D %), USDT Dominance (USDT.D %), dan Total Crypto Market Cap. Jelaskan apakah uang sedang lari ke Bitcoin, terjadi rotasi Altseason, atau trader panik kabur ke cash USDT.\n");
-            promptSb.append("3. Status Ketakutan & Deteksi Anomali Pasar: Hubungkan VIX Wall Street dan USDT.D Kripto (Risk-On vs Risk-Off). Jelaskan secara gamblang apakah kondisi pasar saat ini WAJAR (selaras) atau ANOMALI/DIVERGENSI (misal: Saham naik kencang tapi Dolar/Yield masih tinggi dan Kripto malah buang barang ke USDT.D).\n");
-            promptSb.append("4. Di bagian paling bawah, tulis KESIMPULAN STATUS DUNIA dalam format tegas:\n");
+            promptSb.append("3. Status Ketakutan Pasar: Hubungkan VIX Wall Street dan USDT.D Kripto (Risk-On vs Risk-Off).\n");
+            promptSb.append("4. Di bagian paling bawah, tulis KESIMPULAN STATUS DUNIA dalam format tegas dan edukatif berikut:\n");
             promptSb.append("🌐 <b>STATUS KESEHATAN EKONOMI DUNIA:</b> [Pilih: RISK-OFF WASPADA / RISK-ON SEJATI / ANOMALI DIVERGENSI PALSU / STAGFLASI GEOPOLITIK / KONSOLIDASI]\n");
-            promptSb.append("⚖️ <b>DIAGNOSA PASAR:</b> [Pilih: KONDISI WAJAR (SELARAS) atau ANOMALI (DIVERGENSI / JEBAKAN PALSU) - beri penjelasan 1 kalimat singkat]\n");
-            promptSb.append("👉 <b>Catatan Kunci:</b> (1-2 kalimat vonis kesehatan ekonomi & panduan taktis)\n\n");
+            promptSb.append("⚖️ <b>DIAGNOSA PASAR:</b> [KONDISI WAJAR (SELARAS) atau ANOMALI (DIVERGENSI / JEBAKAN PALSU)]\n");
+            promptSb.append("🔍 <b>Mengapa Disebut Anomali / Wajar?</b>\n");
+            promptSb.append("• <i>Kondisi Seharusnya:</i> [Jelaskan 1 kalimat kondisi normalnya, misal: Pada Risk-On sejati yang sehat, jika saham rally maka DXY & Yield 10Y seharusnya turun/melemah dan kripto ikut rally belanja aset]\n");
+            promptSb.append("• <i>Kenyataan Saat Ini:</i> [Jelaskan 1 kalimat kontradiksinya, misal: Namun kenyataannya DXY dan Yield 10Y tetap mencekik di level tinggi sementara trader kripto justru kabur simpan cash ke USDT.D]\n");
+            promptSb.append("👉 <b>Catatan Kunci:</b> (1-2 kalimat vonis kesehatan ekonomi & panduan taktis bagi Tuan Ciro)\n\n");
             promptSb.append("Gunakan format teks HTML Telegram (<b>bold</b>, <i>italic</i>, <code>code</code>). DILARANG menggunakan tanda dolar ($) atau formula LaTeX. Buat tajam, lugas, dan padat.");
 
             String aiAnalysis = callLunaAI(promptSb.toString());
