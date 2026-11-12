@@ -749,17 +749,25 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
             promptSb.append("[JADWAL KALENDER EKONOMI AS MINGGU INI (FOREXFACTORY FEED LIVE)]:\n");
             promptSb.append(calendarData).append("\n\n");
             promptSb.append("Tugas Anda sebagai AI Intelijen Makro & The Fed Kompas Tuan Ciro:\n");
-            promptSb.append("Buat laporan analisis institusional konkret, objektif, dan tajam yang mensintesis data obligasi CME, data NFP & CPI terakhir, volatilitas MOVE Index, serta kondisi likuiditas sistemik dolar dengan gosip pejabat FOMC dari Grok di atas:\n");
-            promptSb.append("1. NADA THE FED (Hawkish vs Dovish): Padukan data NFP terakhir (+165K), CPI panas (+0.4%), dan pernyataan pejabat Fed dari Grok (Waller, Bowman, Logan) dengan Yield US 2Y, US 10Y, dan DXY.\n");
-            promptSb.append("2. VOLATILITAS PASAR OBLIGASI & LIKUIDITAS SISTEMIK (MOVE Index vs VIX, RRP/TGA): Bedah lonjakan MOVE Index ke 92.43 (+7.5%). Jelaskan mengapa volatilitas obligasi melonjak saat VIX saham masih tenang, serta dampaknya pada likuiditas dolar untuk pasar kripto (Bitcoin) dan emas.\n");
-            promptSb.append("3. BAROMETER KEPASTIAN PASAR (Priced In vs Zona Abu-Abu): Bedah kontrak CME ZQ1! dibanding ekspektasi pasar di Twitter/X dan konsensus kenaikan suku bunga Desember.\n");
-            promptSb.append("4. DETEKSI VOLATILITAS & LONJAKAN MENDATANG: Fokuskan analisis potensi spike pada rilis data MENDATANG (terutama Unemployment Claims & Core PPI). Petakan sensitivitas XAUUSD, Dolar, dan Bitcoin.\n");
-            promptSb.append("5. SKENARIO TAKTIS: Panduan antisipasi trading jika data rilis mendatang mengejutkan naik vs mengejutkan turun.\n\n");
-            promptSb.append("Di bagian paling bawah, tulis KESIMPULAN STATUS dalam format tegas:\n");
-            promptSb.append("🏛️ <b>STATUS NADA THE FED:</b> [Pilih salah satu: HAWKISH TEGAS / HAWKISH CONDONG ABU-ABU / DOVISH / ABU-ABU DILEMA TOTAL]\n");
-            promptSb.append("⚡ <b>POTENSI LONJAKAN / SPIKE:</b> [Pilih salah satu: EKSTREM TINGGI / TINGGI / MODERAT / RENDAH]\n");
+            promptSb.append("Buat laporan analisis yang RINGKAS, PADAT, dan MUDAH DIPAHAMI ORANG AWAM dengan format POIN PELURU (BULLET POINTS):\n");
+            promptSb.append("Gunakan struktur tepat seperti berikut (jangan bertele-tele dalam paragraf panjang):\n\n");
+            promptSb.append("🗣️ <b>Bisik-Bisik Pejabat Fed:</b>\n");
+            promptSb.append("• (Rangkum 1-2 poin sikap pejabat Fed seperti Waller/Bowman/Logan dari info Grok & data NFP/CPI panas)\n\n");
+            promptSb.append("🎲 <b>Taruhan Pasar (CME ZQ1!):</b>\n");
+            promptSb.append("• (Jelaskan arti kontrak CME ZQ1! dan Implied Rate dibanding target Fed dalam 1-2 kalimat lugas)\n\n");
+            promptSb.append("📊 <b>Kondisi Pasar Saat Ini:</b>\n");
+            promptSb.append("• Dolar (DXY) & Yield 10Y: (Jelaskan statusnya)\n");
+            promptSb.append("• Volatilitas Obligasi (MOVE Index): (Jelaskan artinya lonjakan MOVE bagi likuiditas)\n\n");
+            promptSb.append("🎯 <b>Dampak ke Aset (Emas & Bitcoin):</b>\n");
+            promptSb.append("• Emas (XAUUSD): (Potensi arah & level bahaya)\n");
+            promptSb.append("• Bitcoin: (Efek likuiditas dolar)\n\n");
+            promptSb.append("⏰ <b>Jadwal Bahaya Terdekat:</b>\n");
+            promptSb.append("• (Sebutkan rilis data mendatang terpenting seperti Claims & Core PPI beserta potensinya)\n\n");
+            promptSb.append("Di bagian paling bawah, tulis KESIMPULAN STATUS tegas:\n");
+            promptSb.append("🏛️ <b>STATUS NADA THE FED:</b> [Pilih: HAWKISH TEGAS / HAWKISH CONDONG ABU-ABU / DOVISH / ABU-ABU DILEMA TOTAL]\n");
+            promptSb.append("⚡ <b>POTENSI LONJAKAN / SPIKE:</b> [Pilih: EKSTREM TINGGI / TINGGI / MODERAT / RENDAH]\n");
             promptSb.append("👉 <b>Catatan Taktis:</b> (1-2 kalimat vonis tajam untuk panduan trading)\n\n");
-            promptSb.append("Gunakan format teks HTML Telegram (<b>bold</b>, <i>italic</i>, <code>code</code>). DILARANG menggunakan tanda dolar ($) atau formula LaTeX. Buat berbobot, lugas, dan padat.");
+            promptSb.append("Gunakan format teks HTML Telegram (<b>bold</b>, <i>italic</i>, <code>code</code>). DILARANG menggunakan tanda dolar ($) atau formula LaTeX. Buat ringkas, tajam, dan langsung ke intinya!");
 
             String aiAnalysis = callLunaAI(promptSb.toString());
             if (aiAnalysis != null && !aiAnalysis.trim().isEmpty()) {
