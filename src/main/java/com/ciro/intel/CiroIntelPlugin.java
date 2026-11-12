@@ -678,13 +678,14 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
             promptSb.append("Berikut adalah data live indikator kesehatan ekonomi & kripto dunia (Zero Delay TradingView WebSocket):\n\n");
             promptSb.append(matrixData.toString()).append("\n");
             promptSb.append("Tugas Anda sebagai AI Intelijen Pasar Tuan Ciro:\n");
-            promptSb.append("Buat analisis Matriks Makro, Kripto & Kesehatan Ekonomi Dunia:\n");
+            promptSb.append("Buat analisis Matriks Makro, Kripto & Kesehatan Ekonomi Dunia secara tajam dan ringkas:\n");
             promptSb.append("1. Peta Likuiditas Makro: Hubungkan DXY, Yield US 10Y, Minyak, Emas, dan Bursa Saham AS/Asia/Eropa.\n");
             promptSb.append("2. Peta Pasar Kripto: Analisa BTC, BTC Dominance (BTC.D %), USDT Dominance (USDT.D %), dan Total Crypto Market Cap. Jelaskan apakah uang sedang lari ke Bitcoin, terjadi rotasi Altseason, atau trader panik kabur ke cash USDT.\n");
-            promptSb.append("3. Status Ketakutan Pasar: Hubungkan VIX Wall Street dan USDT.D Kripto (Risk-On vs Risk-Off).\n");
+            promptSb.append("3. Status Ketakutan & Deteksi Anomali Pasar: Hubungkan VIX Wall Street dan USDT.D Kripto (Risk-On vs Risk-Off). Jelaskan secara gamblang apakah kondisi pasar saat ini WAJAR (selaras) atau ANOMALI/DIVERGENSI (misal: Saham naik kencang tapi Dolar/Yield masih tinggi dan Kripto malah buang barang ke USDT.D).\n");
             promptSb.append("4. Di bagian paling bawah, tulis KESIMPULAN STATUS DUNIA dalam format tegas:\n");
-            promptSb.append("🌐 <b>STATUS KESEHATAN EKONOMI DUNIA:</b> [Pilih salah satu misal: RISK-OFF WASPADA / RISK-ON MODERAT / STAGFLASI GEOPOLITIK / PANIK / KONSOLIDASI]\n");
-            promptSb.append("👉 <b>Catatan Kunci:</b> (1-2 kalimat vonis kesehatan ekonomi & kripto global)\n\n");
+            promptSb.append("🌐 <b>STATUS KESEHATAN EKONOMI DUNIA:</b> [Pilih: RISK-OFF WASPADA / RISK-ON SEJATI / ANOMALI DIVERGENSI PALSU / STAGFLASI GEOPOLITIK / KONSOLIDASI]\n");
+            promptSb.append("⚖️ <b>DIAGNOSA PASAR:</b> [Pilih: KONDISI WAJAR (SELARAS) atau ANOMALI (DIVERGENSI / JEBAKAN PALSU) - beri penjelasan 1 kalimat singkat]\n");
+            promptSb.append("👉 <b>Catatan Kunci:</b> (1-2 kalimat vonis kesehatan ekonomi & panduan taktis)\n\n");
             promptSb.append("Gunakan format teks HTML Telegram (<b>bold</b>, <i>italic</i>, <code>code</code>). DILARANG menggunakan tanda dolar ($) atau formula LaTeX. Buat tajam, lugas, dan padat.");
 
             String aiAnalysis = callLunaAI(promptSb.toString());
