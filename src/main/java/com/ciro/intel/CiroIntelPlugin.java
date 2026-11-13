@@ -428,67 +428,49 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
         }
 
         List<NewsItem> idxList = new ArrayList<>();
-        List<NewsItem> goldList = new ArrayList<>();
-        List<NewsItem> btcList = new ArrayList<>();
 
         for (NewsItem item : newsDatabase.values()) {
             if ("IDX".equalsIgnoreCase(item.sector)) idxList.add(item);
-            else if ("GOLD".equalsIgnoreCase(item.sector)) goldList.add(item);
-            else if ("BTC".equalsIgnoreCase(item.sector)) btcList.add(item);
         }
 
         List<NewsItem> topIdx = filterHighImpact(idxList, Arrays.asList(
                 "akuisisi", "merger", "dividen", "investasi", "baterai", "laba", "suspensi", "esdm", "pabrik", "tender",
                 "bumn", "rights issue", "private placement", "backdoor", "hapsoro", "prajogo", "salim", "danantara", "bren", "chandra"
         ));
-        List<NewsItem> topGold = filterHighImpact(goldList, Arrays.asList("fed", "rate", "yield", "inflation", "cpi", "war", "middle east", "central bank", "china", "pboc", "gold", "powell", "geopolitik"));
-        List<NewsItem> topBtc = filterHighImpact(btcList, Arrays.asList("whale", "etf", "sec", "inflow", "outflow", "blackrock", "binance", "coinbase", "reserve", "all-time", "trump", "liquidation", "halving"));
 
         StringBuilder promptSb = new StringBuilder();
-        promptSb.append("Daftar berita pasar 24 jam terakhir:\n\n");
+        promptSb.append("Daftar berita & keterbukaan informasi pasar Saham IDX 24 jam terakhir:\n\n");
 
         promptSb.append("[SEKTOR SAHAM IDX]:\n");
         for (NewsItem n : topIdx) promptSb.append("- ").append(n.title).append("\n");
 
-        promptSb.append("\n[SEKTOR GOLD / XAUUSD & MAKRO]:\n");
-        for (NewsItem n : topGold) promptSb.append("- ").append(n.title).append("\n");
-
-        promptSb.append("\n[SEKTOR BITCOIN & CRYPTO]:\n");
-        for (NewsItem n : topBtc) promptSb.append("- ").append(n.title).append("\n");
-
-        promptSb.append("\nTugas Anda sebagai Head of Trading Desk & Senior Intelijen Pasar Tuan Ciro:\n");
-        promptSb.append("Tulis laporan intelijen trading harian yang TAJAM, DINGIN, DENGAN INSTING PRO TRADER (seperti gaya analisis Koran Saham Indo & institutional hedge fund trader).\n");
-        promptSb.append("DILARANG KAKU seperti laporan skripsi/buku teks akademis! Gunakan istilah pasar yang nyata (katalis, akumulasi bandar/smart money, rotasi sektor, jebakan guyur/distribusi, momentum haki/haka, level psikologis).\n\n");
-        promptSb.append("WAJIB susun dalam 3 sektor berikut dengan format rapi Telegram HTML:\n\n");
-        promptSb.append("🇮🇩 <b>1. RADAR SAHAM IDX (KATALIS & SMART MONEY)</b>\n");
-        promptSb.append("• <b>Katalis Panas & Emiten Kunci:</b> (Bedah emiten yang punya isu jumbo: akuisisi, merger, rights issue, konglomerasi/klan, proyek BUMN/Danantara. Sebut kode sahamnya, misal: BREN, BBRI, BRPT).\n");
-        promptSb.append("• <b>Alur Arus Modal & Arah Main:</b> (Siapa yang sedang menggerakkan harga? Apakah momentum haka, akumulasi diam-diam, atau euforia retail sesaat).\n");
-        promptSb.append("• <b>Taktik & Area Bahaya:</b> (Peringatan jebakan distribusi, batas toleransi risiko, atau skenario guyur setelah berita rilis / buy the rumor sell the news).\n\n");
-        promptSb.append("🟡 <b>2. GOLD (XAUUSD) & MAKRO GLOBAL</b>\n");
-        promptSb.append("• <b>Trigger Penggerak Utama:</b> (Yield US 10Y, inflasi/CPI, sikap The Fed, atau eskalasi geopolitik yang menyetir safe-haven).\n");
-        promptSb.append("• <b>Bias & Skenario Harga:</b> (Bullish continuation, pullback likuiditas, atau sideways jebakan jelang news).\n");
-        promptSb.append("• <b>Zona Eksekusi & Volatilitas:</b> (Level kunci yang harus dipantau dan peringatan bahaya false breakout).\n\n");
-        promptSb.append("🪙 <b>3. BITCOIN & CRYPTO ROTATION</b>\n");
-        promptSb.append("• <b>Dinamika On-Chain & Arus Institusi:</b> (Net flow ETF BlackRock/Fidelity, pergerakan whale exchange, atau sentimen likuiditas).\n");
-        promptSb.append("• <b>Peta Kekuatan Pasar:</b> (Dominasi BTC vs Altcoin, apakah likuiditas terkonsentrasi di BTC atau mulai merembes ke altcoin ber-beta tinggi).\n");
-        promptSb.append("• <b>Playbook Tuan Ciro:</b> (Vonis taktis: apakah agresif ikut momentum, tahan cash/USDT, atau pasang jaring di area support likuiditas).\n\n");
+        promptSb.append("\nTugas Anda sebagai Head of Trading Desk & Senior Equity Analyst Saham IDX Tuan Ciro:\n");
+        promptSb.append("Tulis laporan intelijen trading SAHAM IDX yang SANGAT TAJAM, FOKUS PENUH KE EMITEN LOKAL, DENGAN INSTING PRO TRADER (seperti gaya analisis Koran Saham Indo & institutional trading desk).\n");
+        promptSb.append("DILARANG KAKU seperti laporan skripsi/buku teks akademis! Gunakan istilah pasar yang nyata (katalis emiten, aksi korporasi, konglomerasi/klan bisnis, akumulasi bandar/smart money, rotasi sektor, jebakan guyur/distribusi, momentum haki/haka, level psikologis).\n\n");
+        promptSb.append("FOKUS HANYA PADA SAHAM IDX (TIDAK PERLU EMAS / BITCOIN). Susun laporan dengan format rapi Telegram HTML berikut:\n\n");
+        promptSb.append("🇮🇩 <b>RADAR EMITEN & KATALIS PANAS IDX</b>\n");
+        promptSb.append("• <b>Emiten Kunci & Isu Jumbo:</b> (Bedah emiten yang punya isu panas: akuisisi, merger, rights issue, konglomerasi/klan Hapsoro/Prajogo/Salim, proyek BUMN/Danantara. WAJIB sebut kode saham dengan jelas, misal: BREN, BBRI, BRPT, CUAN).\n");
+        promptSb.append("• <b>Aliran Modal & Manuver Smart Money:</b> (Siapa yang sedang menggerakkan harga? Apakah momentum haka agresif, akumulasi diam-diam, atau euforia retail sesaat yang rawan terbantai).\n");
+        promptSb.append("• <b>Peta Rotasi Sektor:</b> (Ke mana arah perputaran uang di IHSG hari ini? Misal: rotasi dari perbankan big cap ke komoditas/energi, atau gairah saham second liner).\n");
+        promptSb.append("• <b>Taktik & Area Bahaya:</b> (Peringatan jebakan distribusi, batas toleransi risiko/stop loss, atau skenario guyur setelah berita rilis / buy the rumor sell the news).\n");
+        promptSb.append("• <b>Playbook Eksekusi Tuan Ciro:</b> (Vonis langsung untuk Tuan Ciro: list ticker saham pantauan, strategi scalping/swing, dan timing entry yang aman).\n\n");
         promptSb.append("ATURAN FORMAT:\n");
         promptSb.append("- Gunakan format teks HTML Telegram (<b>bold</b>, <i>italic</i>, <code>code</code>).\n");
-        promptSb.append("- DILARANG KERAS menggunakan simbol dolar ($) atau formula LaTeX (seperti $BIKE atau $100, tulis BIKE atau USD 100).\n");
+        promptSb.append("- DILARANG KERAS menggunakan simbol dolar ($) atau formula LaTeX (seperti $BIKE atau $BBRI, tulis BIKE atau BBRI).\n");
         promptSb.append("- Karakter tulisan: Lugas, taktis, berani menyimpulkan, dan langsung ke inti manuver cuan.");
 
         // Panggil AI Luna
         String aiAnalysis = callLunaAI(promptSb.toString());
 
         if (aiAnalysis != null && !aiAnalysis.trim().isEmpty()) {
-            sendTelegramMessage("📡 <b>RADAR INTELIJEN PASAR — ANALISIS AI LUNA</b>\n" +
+            sendTelegramMessage("📡 <b>RADAR INTELIJEN SAHAM IDX — ANALISIS AI LUNA</b>\n" +
                     "⏱ <i>Periode Pantauan 24 Jam</i>\n" +
                     "━━━━━━━━━━━━━━━━━━━━━━━━━\n\n" +
                     aiAnalysis +
                     "\n\n━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
                     "🎯 <i>Status: Analisis cerdas dihasilkan oleh AI Luna (GPT-6) via Paper Minecraft.</i>");
         } else {
-            sendTelegramFallbackSummary(topIdx, topGold, topBtc);
+            sendTelegramFallbackSummary(topIdx);
         }
     }
 
@@ -1243,16 +1225,12 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
         }
     }
 
-    private void sendTelegramFallbackSummary(List<NewsItem> topIdx, List<NewsItem> topGold, List<NewsItem> topBtc) {
+    private void sendTelegramFallbackSummary(List<NewsItem> topIdx) {
         StringBuilder sb = new StringBuilder();
-        sb.append("📡 <b>RADAR INTELIJEN PASAR — EARLY ALPHA</b>\n");
+        sb.append("📡 <b>RADAR INTELIJEN SAHAM IDX — EARLY ALPHA</b>\n");
         sb.append("━━━━━━━━━━━━━━━━━━━━━━━━━\n");
-        sb.append("🇮🇩 <b>1. SAHAM IDX & AKSI KORPORASI:</b>\n");
+        sb.append("🇮🇩 <b>SAHAM IDX & AKSI KORPORASI:</b>\n");
         formatSection(sb, topIdx, "Belum ada isu signifikan.");
-        sb.append("\n🟡 <b>2. GOLD & MAKRO:</b>\n");
-        formatSection(sb, topGold, "Sentimen emas stabil.");
-        sb.append("\n🟠 <b>3. BITCOIN & WHALE:</b>\n");
-        formatSection(sb, topBtc, "Arus koin normal.");
         sb.append("\n━━━━━━━━━━━━━━━━━━━━━━━━━\n");
         sendTelegramMessage(sb.toString());
     }
@@ -1278,7 +1256,7 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
         result.addAll(prioritized);
         result.addAll(regular);
 
-        return result.subList(0, Math.min(result.size(), 4));
+        return result.subList(0, Math.min(result.size(), 8));
     }
 
     private void formatSection(StringBuilder sb, List<NewsItem> list, String emptyFallback) {
