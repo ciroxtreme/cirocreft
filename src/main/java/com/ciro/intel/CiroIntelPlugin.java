@@ -327,8 +327,9 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
         int totalNew = 0;
         try {
             // 1. Scan Saham IDX
-            totalNew += fetchRssFeed("https://news.google.com/rss/search?q=keterbukaan+informasi+IDX+OR+akuisisi+saham+when:1d&hl=id&gl=ID&ceid=ID:id", "IDX");
-            totalNew += fetchRssFeed("https://news.google.com/rss/search?q=saham+IHSG+OR+dividen+OR+merger+when:1d&hl=id&gl=ID&ceid=ID:id", "IDX");
+            totalNew += fetchRssFeed("https://news.google.com/rss/search?q=site:emitennews.com+OR+site:bloombergtechnoz.com+OR+site:idxchannel.com+when:1d&hl=id&gl=ID&ceid=ID:id", "IDX");
+            totalNew += fetchRssFeed("https://news.google.com/rss/search?q=keterbukaan+informasi+IDX+OR+akuisisi+OR+tender+offer+OR+rights+issue+when:1d&hl=id&gl=ID&ceid=ID:id", "IDX");
+            totalNew += fetchRssFeed("https://news.google.com/rss/search?q=saham+IHSG+OR+dividen+OR+merger+OR+suspensi+when:1d&hl=id&gl=ID&ceid=ID:id", "IDX");
             totalNew += fetchRssFeed("https://www.cnbcindonesia.com/market/rss", "IDX");
             totalNew += fetchRssFeed("https://www.antaranews.com/rss/ekonomi-finansial.xml", "IDX");
 
@@ -436,9 +437,12 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
             else if ("BTC".equalsIgnoreCase(item.sector)) btcList.add(item);
         }
 
-        List<NewsItem> topIdx = filterHighImpact(idxList, Arrays.asList("akuisisi", "merger", "dividen", "investasi", "baterai", "laba", "suspensi", "esdm", "pabrik", "tender", "bumn"));
-        List<NewsItem> topGold = filterHighImpact(goldList, Arrays.asList("fed", "rate", "yield", "inflation", "cpi", "war", "middle east", "central bank", "china", "pboc", "gold"));
-        List<NewsItem> topBtc = filterHighImpact(btcList, Arrays.asList("whale", "etf", "sec", "inflow", "outflow", "blackrock", "binance", "coinbase", "reserve", "all-time", "trump"));
+        List<NewsItem> topIdx = filterHighImpact(idxList, Arrays.asList(
+                "akuisisi", "merger", "dividen", "investasi", "baterai", "laba", "suspensi", "esdm", "pabrik", "tender",
+                "bumn", "rights issue", "private placement", "backdoor", "hapsoro", "prajogo", "salim", "danantara", "bren", "chandra"
+        ));
+        List<NewsItem> topGold = filterHighImpact(goldList, Arrays.asList("fed", "rate", "yield", "inflation", "cpi", "war", "middle east", "central bank", "china", "pboc", "gold", "powell", "geopolitik"));
+        List<NewsItem> topBtc = filterHighImpact(btcList, Arrays.asList("whale", "etf", "sec", "inflow", "outflow", "blackrock", "binance", "coinbase", "reserve", "all-time", "trump", "liquidation", "halving"));
 
         StringBuilder promptSb = new StringBuilder();
         promptSb.append("Daftar berita pasar 24 jam terakhir:\n\n");
@@ -452,25 +456,26 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
         promptSb.append("\n[SEKTOR BITCOIN & CRYPTO]:\n");
         for (NewsItem n : topBtc) promptSb.append("- ").append(n.title).append("\n");
 
-        promptSb.append("\nTugas Anda sebagai AI Intelijen Pasar Tuan Ciro:\n");
-        promptSb.append("Buat laporan analisis cerdas untuk 3 sektor di atas (Saham IDX, Gold, Bitcoin) dengan gaya POIN TAKTIS, RINGKAS, dan MUDAH DIPAHAMI ORANG AWAM (DILARANG paragraf panjang bertele-tele).\n\n");
-        promptSb.append("WAJIB gunakan struktur persis seperti template berikut:\n\n");
-        promptSb.append("🇮🇩 <b>1. SAHAM IDX</b>\n");
-        promptSb.append("• <b>Katalis Kunci:</b> (Sebutkan aksi korporasi/emiten penting, ringkas 1 kalimat)\n");
-        promptSb.append("• <b>Arah & Dampak:</b> (Potensi pergerakan harga/minat investor, 1 kalimat)\n");
-        promptSb.append("• <b>Rambu Bahaya:</b> (Peringatan risiko/jebakan fomo/ex-date yang harus dihindari, 1 kalimat)\n\n");
-        promptSb.append("🟡 <b>2. EMAS (XAUUSD)</b>\n");
-        promptSb.append("• <b>Katalis Kunci:</b> (Posisi harga/area kunci & faktor sentimen/suku bunga/data AS, 1 kalimat)\n");
-        promptSb.append("• <b>Arah & Dampak:</b> (Skenario jika data bagus/buruk terhadap emas, 1 kalimat)\n");
-        promptSb.append("• <b>Rambu Bahaya:</b> (Level psikologis bahaya/lonjakan volatilitas rilis data, 1 kalimat)\n\n");
-        promptSb.append("🪙 <b>3. BITCOIN & KRIPTO</b>\n");
-        promptSb.append("• <b>Katalis Kunci:</b> (Arus ETF spot/inflow/outflow & sentimen whale/ekosistem, 1 kalimat)\n");
-        promptSb.append("• <b>Arah & Dampak:</b> (Arah dominasi tekanan jual/beli jangka pendek, 1 kalimat)\n");
-        promptSb.append("• <b>Rambu Bahaya:</b> (Risiko banting harga/whipsaw/level rawan, 1 kalimat)\n\n");
+        promptSb.append("\nTugas Anda sebagai Head of Trading Desk & Senior Intelijen Pasar Tuan Ciro:\n");
+        promptSb.append("Tulis laporan intelijen trading harian yang TAJAM, DINGIN, DENGAN INSTING PRO TRADER (seperti gaya analisis Koran Saham Indo & institutional hedge fund trader).\n");
+        promptSb.append("DILARANG KAKU seperti laporan skripsi/buku teks akademis! Gunakan istilah pasar yang nyata (katalis, akumulasi bandar/smart money, rotasi sektor, jebakan guyur/distribusi, momentum haki/haka, level psikologis).\n\n");
+        promptSb.append("WAJIB susun dalam 3 sektor berikut dengan format rapi Telegram HTML:\n\n");
+        promptSb.append("🇮🇩 <b>1. RADAR SAHAM IDX (KATALIS & SMART MONEY)</b>\n");
+        promptSb.append("• <b>Katalis Panas & Emiten Kunci:</b> (Bedah emiten yang punya isu jumbo: akuisisi, merger, rights issue, konglomerasi/klan, proyek BUMN/Danantara. Sebut kode sahamnya, misal: BREN, BBRI, BRPT).\n");
+        promptSb.append("• <b>Alur Arus Modal & Arah Main:</b> (Siapa yang sedang menggerakkan harga? Apakah momentum haka, akumulasi diam-diam, atau euforia retail sesaat).\n");
+        promptSb.append("• <b>Taktik & Area Bahaya:</b> (Peringatan jebakan distribusi, batas toleransi risiko, atau skenario guyur setelah berita rilis / buy the rumor sell the news).\n\n");
+        promptSb.append("🟡 <b>2. GOLD (XAUUSD) & MAKRO GLOBAL</b>\n");
+        promptSb.append("• <b>Trigger Penggerak Utama:</b> (Yield US 10Y, inflasi/CPI, sikap The Fed, atau eskalasi geopolitik yang menyetir safe-haven).\n");
+        promptSb.append("• <b>Bias & Skenario Harga:</b> (Bullish continuation, pullback likuiditas, atau sideways jebakan jelang news).\n");
+        promptSb.append("• <b>Zona Eksekusi & Volatilitas:</b> (Level kunci yang harus dipantau dan peringatan bahaya false breakout).\n\n");
+        promptSb.append("🪙 <b>3. BITCOIN & CRYPTO ROTATION</b>\n");
+        promptSb.append("• <b>Dinamika On-Chain & Arus Institusi:</b> (Net flow ETF BlackRock/Fidelity, pergerakan whale exchange, atau sentimen likuiditas).\n");
+        promptSb.append("• <b>Peta Kekuatan Pasar:</b> (Dominasi BTC vs Altcoin, apakah likuiditas terkonsentrasi di BTC atau mulai merembes ke altcoin ber-beta tinggi).\n");
+        promptSb.append("• <b>Playbook Tuan Ciro:</b> (Vonis taktis: apakah agresif ikut momentum, tahan cash/USDT, atau pasang jaring di area support likuiditas).\n\n");
         promptSb.append("ATURAN FORMAT:\n");
         promptSb.append("- Gunakan format teks HTML Telegram (<b>bold</b>, <i>italic</i>, <code>code</code>).\n");
-        promptSb.append("- DILARANG KERAS menggunakan simbol dolar ($) atau formula LaTeX (seperti $BIKE atau $100, gunakan BIKE atau USD 100).\n");
-        promptSb.append("- Tulis dengan bahasa santai, lugas, tajam, dan tidak kaku.");
+        promptSb.append("- DILARANG KERAS menggunakan simbol dolar ($) atau formula LaTeX (seperti $BIKE atau $100, tulis BIKE atau USD 100).\n");
+        promptSb.append("- Karakter tulisan: Lugas, taktis, berani menyimpulkan, dan langsung ke inti manuver cuan.");
 
         // Panggil AI Luna
         String aiAnalysis = callLunaAI(promptSb.toString());
@@ -690,19 +695,26 @@ public final class CiroIntelPlugin extends JavaPlugin implements CommandExecutor
             StringBuilder promptSb = new StringBuilder();
             promptSb.append("Berikut adalah data live indikator kesehatan ekonomi & kripto dunia (Zero Delay TradingView WebSocket):\n\n");
             promptSb.append(matrixData.toString()).append("\n");
-            promptSb.append("Tugas Anda sebagai AI Intelijen Pasar Tuan Ciro:\n");
-            promptSb.append("Buat analisis Matriks Makro, Kripto & Kesehatan Ekonomi Dunia secara tajam dan ringkas:\n");
-            promptSb.append("1. Peta Likuiditas Makro: Hubungkan DXY, Yield US 10Y, Minyak, Emas, dan Bursa Saham AS/Asia/Eropa.\n");
-            promptSb.append("2. Peta Pasar Kripto: Analisa BTC, BTC Dominance (BTC.D %), USDT Dominance (USDT.D %), dan Total Crypto Market Cap. Jelaskan apakah uang sedang lari ke Bitcoin, terjadi rotasi Altseason, atau trader panik kabur ke cash USDT.\n");
-            promptSb.append("3. Status Ketakutan Pasar: Hubungkan VIX Wall Street dan USDT.D Kripto (Risk-On vs Risk-Off).\n");
-            promptSb.append("4. Di bagian paling bawah, tulis KESIMPULAN STATUS DUNIA dalam format tegas dan edukatif berikut:\n");
-            promptSb.append("🌐 <b>STATUS KESEHATAN EKONOMI DUNIA:</b> [Pilih: RISK-OFF WASPADA / RISK-ON SEJATI / ANOMALI DIVERGENSI PALSU / STAGFLASI GEOPOLITIK / KONSOLIDASI]\n");
+            promptSb.append("Tugas Anda sebagai Macro Strategist & Senior Risk Officer Tuan Ciro:\n");
+            promptSb.append("Tulis analisis Matriks Makro & Kripto Global dengan gaya PRO TRADER INSTITUSIONAL yang tajam, luwes, dan DINGIN (DILARANG KAKU seperti laporan skripsi/buku teks!).\n");
+            promptSb.append("Bedah hubungan sebab-akibat antar instrumen secara taktis:\n\n");
+            promptSb.append("1. <b>Aliran Likuiditas & Arah Safe-Haven:</b>\n");
+            promptSb.append("Hubungkan dinamika DXY, Yield US 10Y, Minyak, Emas, dan bursa saham utama (S&P500, Nasdaq, Nikkei, DAX). Apakah terjadi pengetatan likuiditas riil, rotasi aset, atau pelarian modal ke safe-haven?\n\n");
+            promptSb.append("2. <b>Struktur Pasar Kripto & Rotasi Modal:</b>\n");
+            promptSb.append("Analisa pergerakan BTC vs BTC.D, USDT.D (cash park), dan Total Market Cap. Apakah institusi/whale sedang akumulasi BTC, terjadi ekspansi altcoin berisiko, atau pasar sedang de-risking dan kabur parkir di USDT?\n\n");
+            promptSb.append("3. <b>Indeks Ketakutan & Peta Risiko:</b>\n");
+            promptSb.append("Sandingkan VIX Wall Street dengan USDT.D. Apakah pelaku pasar sedang panik, defensif waspada, atau euforia serakah?\n\n");
+            promptSb.append("4. Di bagian akhir, sajikan KESIMPULAN TAKTIS yang tegas:\n");
+            promptSb.append("🌐 <b>STATUS KESEHATAN DUNIA:</b> [Pilih salah satu: RISK-OFF WASPADA / RISK-ON SEJATI / ANOMALI DIVERGENSI PALSU / STAGFLASI GEOPOLITIK / KONSOLIDASI]\n");
             promptSb.append("⚖️ <b>DIAGNOSA PASAR:</b> [KONDISI WAJAR (SELARAS) atau ANOMALI (DIVERGENSI / JEBAKAN PALSU)]\n");
-            promptSb.append("🔍 <b>Mengapa Disebut Anomali / Wajar?</b>\n");
-            promptSb.append("• <i>Kondisi Seharusnya:</i> [Jelaskan 1 kalimat kondisi normalnya, misal: Pada Risk-On sejati yang sehat, jika saham rally maka DXY & Yield 10Y seharusnya turun/melemah dan kripto ikut rally belanja aset]\n");
-            promptSb.append("• <i>Kenyataan Saat Ini:</i> [Jelaskan 1 kalimat kontradiksinya, misal: Namun kenyataannya DXY dan Yield 10Y tetap mencekik di level tinggi sementara trader kripto justru kabur simpan cash ke USDT.D]\n");
-            promptSb.append("👉 <b>Catatan Kunci:</b> (1-2 kalimat vonis kesehatan ekonomi & panduan taktis bagi Tuan Ciro)\n\n");
-            promptSb.append("Gunakan format teks HTML Telegram (<b>bold</b>, <i>italic</i>, <code>code</code>). DILARANG menggunakan tanda dolar ($) atau formula LaTeX. Buat tajam, lugas, dan padat.");
+            promptSb.append("🔍 <b>Bedah Anomali vs Realita:</b>\n");
+            promptSb.append("• <i>Ekspektasi Buku Teks:</i> [1 kalimat ringkas kondisi idealnya]\n");
+            promptSb.append("• <i>Manuver Lapangan:</i> [1 kalimat kontradiksi/fakta pasar sebenarnya]\n");
+            promptSb.append("👉 <b>Playbook Taktis Tuan Ciro:</b> (1-2 kalimat instruksi eksekusi trading langsung: jaga cash, serok pullback, atau hold posisi safe haven)\n\n");
+            promptSb.append("ATURAN FORMAT:\n");
+            promptSb.append("- Gunakan format teks HTML Telegram (<b>bold</b>, <i>italic</i>, <code>code</code>).\n");
+            promptSb.append("- DILARANG KERAS menggunakan simbol dolar ($) atau formula LaTeX (tulis DXY 103 atau USD 100).\n");
+            promptSb.append("- Tulis dengan bahasa pro trader yang luwes, natural, dan berwibawa.");
 
             String aiAnalysis = callLunaAI(promptSb.toString());
             if (aiAnalysis != null && !aiAnalysis.trim().isEmpty()) {
